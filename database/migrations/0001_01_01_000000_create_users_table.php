@@ -17,8 +17,21 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('telefono', 20)->nullable();
+            $table->text('direccion')->nullable();
+            $table->enum('estado', ['activo', 'inactivo'])->default('activo');
+            $table->enum('rol', ['cliente', 'superadmin', 'editor', 'gestor'])->default('cliente');
+            $table->string('metodo_autenticacion', 50)->nullable();
+            $table->string('id_oauth')->nullable();
+            $table->string('avatar_url')->nullable();
+            $table->timestamp('fecha_registro')->useCurrent();
             $table->rememberToken();
             $table->timestamps();
+            
+            // Índices adicionales
+            $table->index('estado');
+            $table->index('rol');
+            $table->index('fecha_registro');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
