@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\ProductoController;
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ComentarioController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// Página principal
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -14,10 +18,35 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Rutas de registro de clientes (públicas)
+Route::get('/registro', [ClienteController::class, 'create'])->name('clientes.create');
+Route::post('/registro', [ClienteController::class, 'store'])->name('clientes.store');
 
+// Rutas para clientes autenticados
+Route::middleware(['auth', 'verified', 'client'])->prefix('cliente')->name('clientes.')->group(function () {
+    Route::get('/dashboard', [ClienteController::class, 'dashboard'])->name('dashboard');
+    Route::get('/tienda', [ClienteController::class, 'tienda'])->name('tienda');
+    Route::get('/producto/{producto}', [ClienteController::class, 'mostrarProducto'])->name('producto.show');
+    
+    // Rutas para comentarios y calificaciones
+    Route::post('/comentarios', [ComentarioController::class, 'store'])->name('comentarios.store');
+    Route::get('/producto/{producto}/comentarios', [ComentarioController::class, 'getComentarios'])->name('comentarios.get');
+    Route::get('/producto/{producto}/estadisticas', [ComentarioController::class, 'getEstadisticas'])->name('comentarios.estadisticas');
+    Route::get('/producto/{producto}/puede-comentar', [ComentarioController::class, 'puedeComentarProducto'])->name('comentarios.puede-comentar');
+});
+
+// Rutas para administradores
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Dashboard de administración
+    Route::get('/dashboard', function () {
+        return Inertia::render('Admin/Dashboard');
+    })->name('dashboard');
+    
+    // Gestión de productos
+    Route::resource('productos', ProductoController::class);
+});
+
+// Rutas de perfil de usuario
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

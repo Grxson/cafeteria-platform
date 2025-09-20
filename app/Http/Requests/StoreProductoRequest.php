@@ -11,7 +11,7 @@ class StoreProductoRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->es_admin;
+        return auth()->check() && in_array(auth()->user()->rol, ['superadmin', 'editor', 'gestor']);
     }
 
     /**

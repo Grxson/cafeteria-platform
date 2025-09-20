@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,15 +30,33 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $data = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Manejar la subida del avatar
+        if ($request->hasFile('avatar')) {
+            // Eliminar el avatar anterior si existe
+            if ($user->avatar_url && Storage::disk('public')->exists($user->avatar_url)) {
+                Storage::disk('public')->delete($user->avatar_url);
+            }
+
+            // Subir el nuevo avatar
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar_url'] = $avatarPath;
         }
 
-        $request->user()->save();
+        // Remover el campo avatar del array de datos ya que no se guarda directamente
+        unset($data['avatar']);
 
-        return Redirect::route('profile.edit');
+        $user->fill($data);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('success', 'Perfil actualizado exitosamente.');
     }
 
     /**
@@ -47,9 +66,17 @@ class ProfileController extends Controller
     {
         $request->validate([
             'password' => ['required', 'current_password'],
+        ], [
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.current_password' => 'La contraseña es incorrecta.',
         ]);
 
         $user = $request->user();
+
+        // Eliminar el avatar si existe
+        if ($user->avatar_url && Storage::disk('public')->exists($user->avatar_url)) {
+            Storage::disk('public')->delete($user->avatar_url);
+        }
 
         Auth::logout();
 

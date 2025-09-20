@@ -33,7 +33,20 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redirección basada en roles
+        $user = Auth::user();
+        
+        switch ($user->rol) {
+            case 'superadmin':
+            case 'editor':
+            case 'gestor':
+                return redirect()->intended(route('admin.dashboard'));
+            case 'cliente':
+                return redirect()->intended(route('clientes.dashboard'));
+            default:
+                // Si no tiene rol definido, redirigir al login
+                return redirect()->route('login')->with('error', 'Rol de usuario no válido.');
+        }
     }
 
     /**
