@@ -40,7 +40,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-            <nav className="border-b border-amber-200 bg-white/90 backdrop-blur-sm shadow-lg">
+            <nav className="border-b border-amber-200 bg-white/90 backdrop-blur-sm shadow-lg relative z-[100]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
@@ -319,14 +319,14 @@ export default function AuthenticatedLayout({ header, children }) {
             </nav>
 
             {header && (
-                <header className="bg-gradient-to-r from-amber-50 to-orange-50 shadow-md border-b border-amber-200">
+                <header className="bg-gradient-to-r from-amber-50 to-orange-50 shadow-md border-b border-amber-200 relative z-[50]">
                     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                         {header}
                     </div>
                 </header>
             )}
 
-            <main>{children}</main>
+            <main className="relative z-[10]">{children}</main>
         </div>
     );
 }

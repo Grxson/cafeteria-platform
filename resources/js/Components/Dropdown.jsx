@@ -27,8 +27,9 @@ const Trigger = ({ children }) => {
 
             {open && (
                 <div
-                    className="fixed inset-0 z-40"
+                    className="fixed inset-0 z-[9998]"
                     onClick={() => setOpen(false)}
+                    style={{ zIndex: 9998 }}
                 ></div>
             )}
         </>
@@ -71,8 +72,9 @@ const Content = ({
                 leaveTo="opacity-0 scale-95"
             >
                 <div
-                    className={`absolute z-50 mt-2 ${alignmentClasses} ${widthClasses}`}
+                    className={`absolute z-[9999] mt-2 ${alignmentClasses} ${widthClasses}`}
                     onClick={() => setOpen(false)}
+                    style={{ zIndex: 9999 }}
                 >
                     {/* Arrow pointer */}
                     <div className={`absolute ${align === 'right' ? 'right-4' : 'left-4'} -top-2 w-4 h-4 transform rotate-45 bg-white border-l border-t border-amber-200 shadow-sm`}></div>
