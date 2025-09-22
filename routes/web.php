@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ProductoController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComentarioController;
+use App\Http\Controllers\CarritoController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -27,12 +28,20 @@ Route::middleware(['auth', 'verified', 'client'])->prefix('cliente')->name('clie
     Route::get('/dashboard', [ClienteController::class, 'dashboard'])->name('dashboard');
     Route::get('/tienda', [ClienteController::class, 'tienda'])->name('tienda');
     Route::get('/producto/{producto}', [ClienteController::class, 'mostrarProducto'])->name('producto.show');
-    
+
     // Rutas para comentarios y calificaciones
     Route::post('/comentarios', [ComentarioController::class, 'store'])->name('comentarios.store');
     Route::get('/producto/{producto}/comentarios', [ComentarioController::class, 'getComentarios'])->name('comentarios.get');
     Route::get('/producto/{producto}/estadisticas', [ComentarioController::class, 'getEstadisticas'])->name('comentarios.estadisticas');
     Route::get('/producto/{producto}/puede-comentar', [ComentarioController::class, 'puedeComentarProducto'])->name('comentarios.puede-comentar');
+
+    // Rutas para carrito de compras
+    Route::get('/carrito', [CarritoController::class, 'index'])->name('carrito');
+    Route::post('/carrito/agregar', [CarritoController::class, 'agregar'])->name('carrito.agregar');
+    Route::put('/carrito/actualizar/{carritoProducto}', [CarritoController::class, 'actualizar'])->name('carrito.actualizar');
+    Route::delete('/carrito/quitar/{carritoProducto}', [CarritoController::class, 'quitar'])->name('carrito.quitar');
+    Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar'])->name('carrito.vaciar');
+    Route::get('/carrito/count', [CarritoController::class, 'count'])->name('carrito.count');
 });
 
 // Rutas para administradores
@@ -41,7 +50,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/dashboard', function () {
         return Inertia::render('Admin/Dashboard');
     })->name('dashboard');
-    
+
     // Gestión de productos
     Route::resource('productos', ProductoController::class);
 });
@@ -53,4 +62,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

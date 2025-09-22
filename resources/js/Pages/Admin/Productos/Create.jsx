@@ -12,10 +12,12 @@ export default function CreateProducto({ categorias }) {
         imagen_principal: null,
         galeria_imagenes: [],
         video_url: '',
+        video_file: null,
         estado: 'activo',
     });
 
     const [previewImages, setPreviewImages] = useState([]);
+    const [videoPreview, setVideoPreview] = useState(null);
 
     const submit = (e) => {
         e.preventDefault();
@@ -43,6 +45,19 @@ export default function CreateProducto({ categorias }) {
         
         const newPreviews = previewImages.filter((_, i) => i !== index);
         setPreviewImages(newPreviews);
+    };
+
+    const handleVideoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData('video_file', file);
+            setVideoPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const removeVideo = () => {
+        setData('video_file', null);
+        setVideoPreview(null);
     };
 
     return (
@@ -217,19 +232,71 @@ export default function CreateProducto({ categorias }) {
                                 )}
                             </div>
 
-                            {/* Video URL */}
-                            <div>
+                            {/* Video */}
+                            <div className="space-y-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    URL de Video (opcional)
+                                    Video del Producto (opcional)
                                 </label>
-                                <input
-                                    type="url"
-                                    value={data.video_url}
-                                    onChange={(e) => setData('video_url', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                    placeholder="https://www.youtube.com/watch?v=..."
-                                />
-                                {errors.video_url && <p className="mt-1 text-sm text-red-600">{errors.video_url}</p>}
+                                
+                                {/* Opción 1: Subir archivo de video */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                                        Subir video desde tu computadora
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="video/*"
+                                        onChange={handleVideoChange}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                    />
+                                    {errors.video_file && <p className="mt-1 text-sm text-red-600">{errors.video_file}</p>}
+                                    
+                                    {/* Preview del video subido */}
+                                    {videoPreview && (
+                                        <div className="mt-3 relative inline-block">
+                                            <video
+                                                src={videoPreview}
+                                                controls
+                                                className="w-full max-w-md h-48 object-cover rounded-lg border-2 border-gray-200"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={removeVideo}
+                                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Separador */}
+                                <div className="flex items-center">
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                    <span className="flex-shrink mx-4 text-gray-500 text-sm">o</span>
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                </div>
+
+                                {/* Opción 2: URL de video */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                                        URL de video (YouTube, Vimeo, etc.)
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={data.video_url}
+                                        onChange={(e) => setData('video_url', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                        placeholder="https://www.youtube.com/watch?v=... o cualquier URL de video"
+                                    />
+                                    {errors.video_url && <p className="mt-1 text-sm text-red-600">{errors.video_url}</p>}
+                                </div>
+
+                                <p className="text-sm text-gray-500">
+                                    💡 Puedes subir un video desde tu computadora o proporcionar una URL de cualquier plataforma de video.
+                                </p>
                             </div>
 
                             {/* Botones de acción */}

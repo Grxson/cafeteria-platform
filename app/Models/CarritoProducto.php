@@ -13,10 +13,12 @@ class CarritoProducto extends Model
         'carrito_id',
         'producto_id',
         'cantidad',
+        'precio_unitario',
     ];
 
     protected $casts = [
         'cantidad' => 'integer',
+        'precio_unitario' => 'decimal:2',
     ];
 
     // Relaciones
@@ -33,6 +35,6 @@ class CarritoProducto extends Model
     // Accessors
     public function getSubtotalAttribute()
     {
-        return $this->cantidad * $this->producto->precio;
+        return $this->cantidad * $this->precio_unitario;
     }
 }

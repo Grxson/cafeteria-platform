@@ -1,27 +1,33 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import {
+    UserGroupIcon,
+    CubeIcon,
+    ShoppingBagIcon,
+    CurrencyDollarIcon
+} from '@heroicons/react/24/outline';
 
 export default function AdminDashboard() {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-2xl font-bold text-amber-800">
+                <h2 className="text-lg sm:text-2xl font-bold text-amber-800">
                     Panel de Administración
                 </h2>
             }
         >
             <Head title="Admin Dashboard - CafeTech" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {/* Admin Welcome Card */}
-                    <div className="overflow-hidden bg-white/90 backdrop-blur-sm shadow-xl sm:rounded-2xl border border-amber-200 mb-8">
-                        <div className="bg-gradient-to-r from-amber-600 to-orange-600 px-6 py-4">
-                            <h3 className="text-lg font-semibold text-white">Panel de Control - Administrador</h3>
-                            <p className="text-amber-100">Gestiona todos los aspectos de la cafetería</p>
+                    <div className="overflow-hidden bg-white/90 backdrop-blur-sm shadow-xl sm:rounded-2xl border border-amber-200 mb-6 sm:mb-8">
+                        <div className="bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-3 sm:px-6 sm:py-4">
+                            <h3 className="text-base sm:text-lg font-semibold text-white">Panel de Control - Administrador</h3>
+                            <p className="text-amber-100 text-sm sm:text-base">Gestiona todos los aspectos de la cafetería</p>
                         </div>
-                        <div className="p-6">
-                            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="p-4 sm:p-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                                 {/* Products Management */}
                                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300">
                                     <div className="flex items-center">
@@ -46,9 +52,7 @@ export default function AdminDashboard() {
                                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200 hover:shadow-lg transition-all duration-300">
                                     <div className="flex items-center">
                                         <div className="bg-green-500 rounded-full p-3">
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                            </svg>
+                                            <UserGroupIcon className="w-6 h-6 text-white" />
                                         </div>
                                         <div className="ml-4">
                                             <h4 className="text-lg font-semibold text-gray-900">Usuarios</h4>
@@ -66,9 +70,7 @@ export default function AdminDashboard() {
                                 <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-200 hover:shadow-lg transition-all duration-300">
                                     <div className="flex items-center">
                                         <div className="bg-purple-500 rounded-full p-3">
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                                            </svg>
+                                            <ShoppingBagIcon className="w-6 h-6 text-white" />
                                         </div>
                                         <div className="ml-4">
                                             <h4 className="text-lg font-semibold text-gray-900">Pedidos</h4>
@@ -86,9 +88,7 @@ export default function AdminDashboard() {
                                 <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200 hover:shadow-lg transition-all duration-300">
                                     <div className="flex items-center">
                                         <div className="bg-amber-500 rounded-full p-3">
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                            </svg>
+                                            <CurrencyDollarIcon className="w-6 h-6 text-white" />
                                         </div>
                                         <div className="ml-4">
                                             <h4 className="text-lg font-semibold text-gray-900">Reportes</h4>
@@ -107,8 +107,8 @@ export default function AdminDashboard() {
                             <div className="mt-8">
                                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h4>
                                 <div className="flex flex-wrap gap-4">
-                                    <a 
-                                        href="/admin/productos/create" 
+                                    <a
+                                        href="/admin/productos/create"
                                         className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-3 rounded-full hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center"
                                     >
                                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,8 +116,8 @@ export default function AdminDashboard() {
                                         </svg>
                                         Agregar Producto
                                     </a>
-                                    <a 
-                                        href="/admin/usuarios" 
+                                    <a
+                                        href="/admin/usuarios"
                                         className="border-2 border-amber-600 text-amber-600 px-6 py-3 rounded-full hover:bg-amber-600 hover:text-white transition-all duration-300 flex items-center"
                                     >
                                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -17,6 +17,7 @@ class Producto extends Model
         'imagen_principal',
         'galeria_imagenes',
         'video_url',
+        'video_file',
         'estado',
     ];
 

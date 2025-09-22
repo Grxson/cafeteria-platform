@@ -23,5 +23,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Manejo específico para errores 419 (CSRF Token Mismatch) - excepto logout
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
+            if ($e->getStatusCode() === 419 && !$request->is('logout')) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Token CSRF expirado. Por favor, recarga la página e intenta de nuevo.',
+                        'redirect' => route('login')
+                    ], 419);
+                }
+                
+                return redirect()->route('login')
+                    ->with('error', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+            }
+        });
     })->create();

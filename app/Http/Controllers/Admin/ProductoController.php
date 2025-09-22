@@ -63,13 +63,18 @@ class ProductoController extends Controller
                 $data['galeria_imagenes'] = $galeria;
             }
 
+            // Manejar archivo de video
+            if ($request->hasFile('video_file')) {
+                $data['video_file'] = $request->file('video_file')
+                    ->store('productos/videos', 'public');
+            }
+
             // Crear el producto
             $producto = Producto::create($data);
 
             return redirect()
                 ->route('admin.productos.index')
                 ->with('success', 'Producto creado exitosamente.');
-
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -84,7 +89,10 @@ class ProductoController extends Controller
     public function show(Producto $producto)
     {
         $producto->load('categoriaProducto');
-        return view('admin.productos.show', compact('producto'));
+
+        return Inertia::render('Admin/Productos/Show', [
+            'producto' => $producto
+        ]);
     }
 
     /**
@@ -92,11 +100,14 @@ class ProductoController extends Controller
      */
     public function edit(Producto $producto)
     {
-        $categorias = CategoriaProducto::activos()
+        $categorias = CategoriaProducto::where('estado', 'activo')
             ->orderBy('nombre')
             ->get();
 
-        return view('admin.productos.edit', compact('producto', 'categorias'));
+        return Inertia::render('Admin/Productos/Edit', [
+            'producto' => $producto,
+            'categorias' => $categorias
+        ]);
     }
 
     /**
@@ -104,7 +115,78 @@ class ProductoController extends Controller
      */
     public function update(Request $request, Producto $producto)
     {
-        // Implementar más tarde si es necesario
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
+            'precio' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'categoria_producto_id' => 'required|exists:categorias_productos,id',
+            'estado' => 'required|in:activo,inactivo',
+            'imagen_principal' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'galeria_imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'video_url' => 'nullable|url',
+            'video_file' => 'nullable|mimes:mp4,avi,mov,wmv,flv|max:20480'
+        ]);
+
+        try {
+            $data = $request->only([
+                'nombre',
+                'descripcion',
+                'precio',
+                'stock',
+                'categoria_producto_id',
+                'estado',
+                'video_url'
+            ]);
+
+            // Manejar imagen principal
+            if ($request->hasFile('imagen_principal')) {
+                // Eliminar imagen anterior si existe
+                if ($producto->imagen_principal) {
+                    Storage::disk('public')->delete($producto->imagen_principal);
+                }
+                $data['imagen_principal'] = $request->file('imagen_principal')
+                    ->store('productos/imagenes', 'public');
+            }
+
+            // Manejar galería de imágenes
+            if ($request->hasFile('galeria_imagenes')) {
+                // Eliminar imágenes anteriores si existen
+                if ($producto->galeria_imagenes) {
+                    foreach ($producto->galeria_imagenes as $imagen) {
+                        Storage::disk('public')->delete($imagen);
+                    }
+                }
+
+                $galeria = [];
+                foreach ($request->file('galeria_imagenes') as $imagen) {
+                    $galeria[] = $imagen->store('productos/galeria', 'public');
+                }
+                $data['galeria_imagenes'] = $galeria;
+            }
+
+            // Manejar archivo de video
+            if ($request->hasFile('video_file')) {
+                // Eliminar video anterior si existe
+                if ($producto->video_file) {
+                    Storage::disk('public')->delete($producto->video_file);
+                }
+                $data['video_file'] = $request->file('video_file')
+                    ->store('productos/videos', 'public');
+            }
+
+            // Actualizar el producto
+            $producto->update($data);
+
+            return redirect()
+                ->route('admin.productos.index')
+                ->with('success', 'Producto actualizado exitosamente.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['error' => 'Error al actualizar el producto: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -129,7 +211,6 @@ class ProductoController extends Controller
             return redirect()
                 ->route('admin.productos.index')
                 ->with('success', 'Producto eliminado exitosamente.');
-
         } catch (\Exception $e) {
             return redirect()
                 ->back()

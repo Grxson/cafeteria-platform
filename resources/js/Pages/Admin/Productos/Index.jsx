@@ -1,18 +1,41 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
+import {
+    EyeIcon,
+    PencilIcon,
+    TrashIcon
+} from '@heroicons/react/24/outline';
 
 export default function IndexProductos({ productos }) {
+    const [eliminando, setEliminando] = useState(null);
+
+    const eliminarProducto = async (producto) => {
+        if (!confirm(`¿Estás seguro de que deseas eliminar el producto "${producto.nombre}"?`)) {
+            return;
+        }
+
+        setEliminando(producto.id);
+
+        try {
+            await router.delete(route('admin.productos.destroy', producto.id));
+        } catch (error) {
+            console.error('Error al eliminar producto:', error);
+        } finally {
+            setEliminando(null);
+        }
+    };
     return (
         <AuthenticatedLayout
             header={
-                <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border border-amber-200 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border border-amber-200 px-4 py-3 sm:px-6 sm:py-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <h2 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                             Gestión de Productos
                         </h2>
                         <Link
                             href={route('admin.productos.create')}
-                            className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold shadow-lg"
+                            className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold shadow-lg text-sm sm:text-base text-center"
                         >
                             + Nuevo Producto
                         </Link>
@@ -22,8 +45,8 @@ export default function IndexProductos({ productos }) {
         >
             <Head title="Productos - CafeTech" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {productos.data.length > 0 ? (
                         <div className="bg-white shadow-xl rounded-2xl border border-amber-200 overflow-hidden">
                             <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
@@ -49,8 +72,8 @@ export default function IndexProductos({ productos }) {
                                                     <div className="flex items-center">
                                                         <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
                                                             {producto.imagen_principal ? (
-                                                                <img 
-                                                                    src={`/storage/${producto.imagen_principal}`} 
+                                                                <img
+                                                                    src={`/storage/${producto.imagen_principal}`}
                                                                     alt={producto.nombre}
                                                                     className="w-full h-full object-cover rounded-lg"
                                                                 />
@@ -79,42 +102,55 @@ export default function IndexProductos({ productos }) {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                        producto.stock > 10 
-                                                            ? 'bg-green-100 text-green-800' 
-                                                            : producto.stock > 0 
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${producto.stock > 10
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : producto.stock > 0
                                                                 ? 'bg-yellow-100 text-yellow-800'
                                                                 : 'bg-red-100 text-red-800'
-                                                    }`}>
+                                                        }`}>
                                                         {producto.stock} unidades
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                        producto.estado === 'activo' 
-                                                            ? 'bg-green-100 text-green-800' 
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${producto.estado === 'activo'
+                                                            ? 'bg-green-100 text-green-800'
                                                             : 'bg-red-100 text-red-800'
-                                                    }`}>
+                                                        }`}>
                                                         {producto.estado === 'activo' ? 'Activo' : 'Inactivo'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="flex items-center justify-center space-x-2">
-                                                        <button className="text-blue-600 hover:text-blue-800 p-2">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                            </svg>
-                                                        </button>
-                                                        <button className="text-green-600 hover:text-green-800 p-2">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                            </svg>
-                                                        </button>
-                                                        <button className="text-red-600 hover:text-red-800 p-2">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                            </svg>
+                                                        {/* Ver producto */}
+                                                        <Link
+                                                            href={route('admin.productos.show', producto.id)}
+                                                            className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                                                            title="Ver producto"
+                                                        >
+                                                            <EyeIcon className="w-4 h-4" />
+                                                        </Link>
+                                                        
+                                                        {/* Editar producto */}
+                                                        <Link
+                                                            href={route('admin.productos.edit', producto.id)}
+                                                            className="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 transition-colors"
+                                                            title="Editar producto"
+                                                        >
+                                                            <PencilIcon className="w-4 h-4" />
+                                                        </Link>
+                                                        
+                                                        {/* Eliminar producto */}
+                                                        <button
+                                                            onClick={() => eliminarProducto(producto)}
+                                                            disabled={eliminando === producto.id}
+                                                            className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                                                            title="Eliminar producto"
+                                                        >
+                                                            {eliminando === producto.id ? (
+                                                                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                                            ) : (
+                                                                <TrashIcon className="w-4 h-4" />
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -136,11 +172,10 @@ export default function IndexProductos({ productos }) {
                                                 <Link
                                                     key={index}
                                                     href={link.url || '#'}
-                                                    className={`px-3 py-2 text-sm rounded-lg ${
-                                                        link.active 
-                                                            ? 'bg-amber-500 text-white' 
+                                                    className={`px-3 py-2 text-sm rounded-lg ${link.active
+                                                            ? 'bg-amber-500 text-white'
                                                             : 'bg-white text-gray-700 hover:bg-amber-100'
-                                                    } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
+                                                        } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
                                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                                 />
                                             ))}

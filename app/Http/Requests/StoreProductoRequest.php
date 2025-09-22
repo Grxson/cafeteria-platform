@@ -31,6 +31,7 @@ class StoreProductoRequest extends FormRequest
             'galeria_imagenes' => 'nullable|array|max:5',
             'galeria_imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'video_url' => 'nullable|url|max:255',
+            'video_file' => 'nullable|file|mimes:mp4,avi,mov,wmv,flv,webm|max:51200', // 50MB máximo
             'estado' => 'required|in:activo,inactivo',
         ];
     }
@@ -59,6 +60,9 @@ class StoreProductoRequest extends FormRequest
             'galeria_imagenes.*.image' => 'Todos los archivos de la galería deben ser imágenes.',
             'galeria_imagenes.*.max' => 'Cada imagen de la galería no puede ser mayor a 2MB.',
             'video_url.url' => 'La URL del video debe ser válida.',
+            'video_file.file' => 'El archivo de video debe ser un archivo válido.',
+            'video_file.mimes' => 'El video debe ser de tipo: mp4, avi, mov, wmv, flv o webm.',
+            'video_file.max' => 'El archivo de video no puede ser mayor a 50MB.',
             'estado.in' => 'El estado debe ser activo o inactivo.',
         ];
     }
