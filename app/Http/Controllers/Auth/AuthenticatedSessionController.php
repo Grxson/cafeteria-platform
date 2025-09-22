@@ -36,7 +36,7 @@ class AuthenticatedSessionController extends Controller
 
         // Redirección basada en roles
         $user = Auth::user();
-        
+
         switch ($user->rol) {
             case 'superadmin':
             case 'editor':
@@ -56,7 +56,7 @@ class AuthenticatedSessionController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         Log::info('Logout iniciado para usuario: ' . Auth::id());
-        
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
