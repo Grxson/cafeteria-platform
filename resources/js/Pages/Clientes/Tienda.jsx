@@ -26,7 +26,7 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
         if (!producto.galeria_imagenes || producto.galeria_imagenes.length === 0) {
             return null;
         }
-        
+
         // Buscar una imagen diferente a la principal
         const imagenPrincipalUrl = getImagenUrl(producto.imagen_principal);
         for (let imagen of producto.galeria_imagenes) {
@@ -35,7 +35,7 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
                 return imagenGaleriaUrl;
             }
         }
-        
+
         // Si todas son iguales, usar la primera
         return getImagenUrl(producto.galeria_imagenes[0]);
     };
@@ -246,12 +246,12 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
                                         {producto.descripcion && (
                                             <div className="mb-4 flex-grow">
                                                 <p className="text-sm text-gray-600 leading-relaxed"
-                                                   style={{
-                                                       display: '-webkit-box',
-                                                       WebkitLineClamp: 3,
-                                                       WebkitBoxOrient: 'vertical',
-                                                       overflow: 'hidden'
-                                                   }}>
+                                                    style={{
+                                                        display: '-webkit-box',
+                                                        WebkitLineClamp: 3,
+                                                        WebkitBoxOrient: 'vertical',
+                                                        overflow: 'hidden'
+                                                    }}>
                                                     {producto.descripcion}
                                                 </p>
                                             </div>

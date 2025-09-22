@@ -30,7 +30,7 @@ export default function CreateProducto({ categorias }) {
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
         setData('galeria_imagenes', files);
-        
+
         // Crear previews
         const previews = files.map(file => ({
             file,
@@ -42,7 +42,7 @@ export default function CreateProducto({ categorias }) {
     const removeImage = (index) => {
         const newFiles = data.galeria_imagenes.filter((_, i) => i !== index);
         setData('galeria_imagenes', newFiles);
-        
+
         const newPreviews = previewImages.filter((_, i) => i !== index);
         setPreviewImages(newPreviews);
     };
@@ -208,7 +208,7 @@ export default function CreateProducto({ categorias }) {
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                 />
                                 {errors.galeria_imagenes && <p className="mt-1 text-sm text-red-600">{errors.galeria_imagenes}</p>}
-                                
+
                                 {/* Preview de imágenes */}
                                 {previewImages.length > 0 && (
                                     <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -237,7 +237,7 @@ export default function CreateProducto({ categorias }) {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Video del Producto (opcional)
                                 </label>
-                                
+
                                 {/* Opción 1: Subir archivo de video */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">
@@ -250,7 +250,7 @@ export default function CreateProducto({ categorias }) {
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                     />
                                     {errors.video_file && <p className="mt-1 text-sm text-red-600">{errors.video_file}</p>}
-                                    
+
                                     {/* Preview del video subido */}
                                     {videoPreview && (
                                         <div className="mt-3 relative inline-block">

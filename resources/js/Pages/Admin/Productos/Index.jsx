@@ -103,18 +103,18 @@ export default function IndexProductos({ productos }) {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${producto.stock > 10
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : producto.stock > 0
-                                                                ? 'bg-yellow-100 text-yellow-800'
-                                                                : 'bg-red-100 text-red-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : producto.stock > 0
+                                                            ? 'bg-yellow-100 text-yellow-800'
+                                                            : 'bg-red-100 text-red-800'
                                                         }`}>
                                                         {producto.stock} unidades
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${producto.estado === 'activo'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
                                                         }`}>
                                                         {producto.estado === 'activo' ? 'Activo' : 'Inactivo'}
                                                     </span>
@@ -129,7 +129,7 @@ export default function IndexProductos({ productos }) {
                                                         >
                                                             <EyeIcon className="w-4 h-4" />
                                                         </Link>
-                                                        
+
                                                         {/* Editar producto */}
                                                         <Link
                                                             href={route('admin.productos.edit', producto.id)}
@@ -138,7 +138,7 @@ export default function IndexProductos({ productos }) {
                                                         >
                                                             <PencilIcon className="w-4 h-4" />
                                                         </Link>
-                                                        
+
                                                         {/* Eliminar producto */}
                                                         <button
                                                             onClick={() => eliminarProducto(producto)}
@@ -173,8 +173,8 @@ export default function IndexProductos({ productos }) {
                                                     key={index}
                                                     href={link.url || '#'}
                                                     className={`px-3 py-2 text-sm rounded-lg ${link.active
-                                                            ? 'bg-amber-500 text-white'
-                                                            : 'bg-white text-gray-700 hover:bg-amber-100'
+                                                        ? 'bg-amber-500 text-white'
+                                                        : 'bg-white text-gray-700 hover:bg-amber-100'
                                                         } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
                                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                                 />

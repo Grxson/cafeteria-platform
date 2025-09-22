@@ -13,13 +13,13 @@ import { useConfirmation } from '@/Hooks/useConfirmation';
 export default function Carrito({ carrito }) {
     const [actualizando, setActualizando] = useState({});
     const [eliminando, setEliminando] = useState({});
-    const { 
-        modalState, 
-        hideModal, 
-        confirmDeleteProduct, 
-        confirmClearCart, 
-        showError, 
-        showSuccess 
+    const {
+        modalState,
+        hideModal,
+        confirmDeleteProduct,
+        confirmClearCart,
+        showError,
+        showSuccess
     } = useConfirmation();
 
     const actualizarCantidad = async (carritoProductoId, nuevaCantidad) => {

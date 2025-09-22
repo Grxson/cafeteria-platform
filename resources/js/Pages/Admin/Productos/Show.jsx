@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { 
+import {
     ArrowLeftIcon,
     PencilIcon,
     CubeIcon,
@@ -98,11 +98,10 @@ export default function ShowProducto({ producto }) {
                             <div className="space-y-6">
                                 {/* Estado */}
                                 <div className="flex items-center gap-2">
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                        producto.estado === 'activo'
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${producto.estado === 'activo'
                                             ? 'bg-green-100 text-green-800'
                                             : 'bg-red-100 text-red-800'
-                                    }`}>
+                                        }`}>
                                         {producto.estado === 'activo' ? 'Activo' : 'Inactivo'}
                                     </span>
                                 </div>

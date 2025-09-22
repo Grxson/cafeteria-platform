@@ -37,7 +37,7 @@ export default function EditProducto({ producto, categorias }) {
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
         setData('galeria_imagenes', files);
-        
+
         // Crear previews
         const previews = files.map(file => ({
             file,
@@ -49,7 +49,7 @@ export default function EditProducto({ producto, categorias }) {
     const removeImage = (index) => {
         const newFiles = data.galeria_imagenes.filter((_, i) => i !== index);
         setData('galeria_imagenes', newFiles);
-        
+
         const newPreviews = previewImages.filter((_, i) => i !== index);
         setPreviewImages(newPreviews);
     };
@@ -225,7 +225,7 @@ export default function EditProducto({ producto, categorias }) {
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                     />
                                     <p className="text-sm text-gray-500">
-                                        {mantieneImagenPrincipal && producto.imagen_principal 
+                                        {mantieneImagenPrincipal && producto.imagen_principal
                                             ? 'Selecciona un archivo para reemplazar la imagen actual'
                                             : 'Selecciona la imagen principal del producto'
                                         }
@@ -256,7 +256,7 @@ export default function EditProducto({ producto, categorias }) {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     <input
                                         type="file"
                                         multiple
@@ -264,7 +264,7 @@ export default function EditProducto({ producto, categorias }) {
                                         onChange={handleImageChange}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                     />
-                                    
+
                                     {/* Nuevas imágenes seleccionadas */}
                                     {previewImages.length > 0 && (
                                         <div>

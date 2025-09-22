@@ -592,8 +592,8 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
             {/* Notificación animada */}
             {notificacion && (
                 <div className={`fixed top-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto z-[150] px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg transform transition-all duration-500 ${notificacion.tipo === 'exito'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-red-500 text-white'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-red-500 text-white'
                     } animate-bounce`}>
                     <div className="flex items-center space-x-2">
                         {notificacion.tipo === 'exito' ? (
