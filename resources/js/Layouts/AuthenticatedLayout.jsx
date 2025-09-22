@@ -5,6 +5,7 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { getAvatarUrl } from '@/Utils/avatarUtils';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
@@ -142,7 +143,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 {/* Avatar circular */}
                                                 {user.avatar_url ? (
                                                     <img
-                                                        src={`/storage/${user.avatar_url}`}
+                                                        src={getAvatarUrl(user.avatar_url)}
                                                         alt="Avatar"
                                                         className="h-8 w-8 rounded-full object-cover shadow-md"
                                                     />
@@ -178,7 +179,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             <div className="flex items-center space-x-3">
                                                 {user.avatar_url ? (
                                                     <img
-                                                        src={`/storage/${user.avatar_url}`}
+                                                        src={getAvatarUrl(user.avatar_url)}
                                                         alt="Avatar"
                                                         className="h-10 w-10 rounded-full object-cover shadow-lg"
                                                     />
@@ -355,7 +356,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             <div className="flex items-center space-x-4">
                                 {user.avatar_url ? (
                                     <img
-                                        src={`/storage/${user.avatar_url}`}
+                                        src={getAvatarUrl(user.avatar_url)}
                                         alt="Avatar"
                                         className="h-14 w-14 rounded-full object-cover shadow-lg border-2 border-white border-opacity-30"
                                     />

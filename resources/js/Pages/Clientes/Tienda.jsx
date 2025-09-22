@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import { getImagenUrl } from '@/Utils/avatarUtils';
 import {
     MagnifyingGlassIcon,
     LightBulbIcon,
@@ -13,13 +14,6 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
     const [busqueda, setBusqueda] = useState('');
     const [agregandoCarrito, setAgregandoCarrito] = useState({});
     const [notificacion, setNotificacion] = useState(null);
-
-    // Función auxiliar para manejar rutas de imágenes
-    const getImagenUrl = (imagen) => {
-        if (!imagen) return null;
-        if (imagen.startsWith('http')) return imagen;
-        return `/storage/${imagen}`;
-    };
 
     // Función para obtener imagen de hover (diferente a la principal)
     const getImagenHover = (producto) => {
@@ -69,25 +63,25 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
             const data = await response.json();
 
             if (response.ok) {
-                // Mostrar mensaje de éxito
+                // Mostrar mensaje de éxito del servidor
                 const evento = new CustomEvent('carritoActualizado', { detail: data.carrito_count });
                 window.dispatchEvent(evento);
 
-                // Mostrar notificación animada
-                const producto = productos.find(p => p.id === productoId);
+                // Mostrar notificación animada con el mensaje del servidor
+                const mensaje = data.message || `¡${producto?.nombre} agregado al carrito!`;
                 setNotificacion({
-                    mensaje: `¡${producto?.nombre} agregado al carrito!`,
+                    mensaje: mensaje,
                     tipo: 'exito'
                 });
 
-                // Ocultar notificación después de 3 segundos
-                setTimeout(() => setNotificacion(null), 3000);
+                // Ocultar notificación después de 5 segundos
+                setTimeout(() => setNotificacion(null), 5000);
             } else {
                 setNotificacion({
                     mensaje: data.message || 'Error al agregar el producto al carrito',
                     tipo: 'error'
                 });
-                setTimeout(() => setNotificacion(null), 3000);
+                setTimeout(() => setNotificacion(null), 5000);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -95,7 +89,7 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
                 mensaje: 'Error al conectar con el servidor',
                 tipo: 'error'
             });
-            setTimeout(() => setNotificacion(null), 3000);
+            setTimeout(() => setNotificacion(null), 5000);
         } finally {
             setAgregandoCarrito(prev => ({ ...prev, [productoId]: false }));
         }
@@ -337,21 +331,36 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
 
             {/* Notificación animada */}
             {notificacion && (
-                <div className={`fixed top-20 right-4 z-[150] px-6 py-4 rounded-lg shadow-lg transform transition-all duration-500 ${notificacion.tipo === 'exito'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-red-500 text-white'
-                    } animate-bounce`}>
-                    <div className="flex items-center space-x-2">
-                        {notificacion.tipo === 'exito' ? (
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        ) : (
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`fixed top-36 right-4 z-[9999999] px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-xl transform transition-all duration-500 ${notificacion.tipo === 'exito'
+                    ? 'bg-green-500 text-white border-l-4 border-green-600'
+                    : 'bg-red-500 text-white border-l-4 border-red-600'
+                    } animate-pulse hover:animate-none cursor-pointer max-w-sm backdrop-blur-sm border border-white/20`}
+                    style={{zIndex: 999999999}}
+                    onClick={() => setNotificacion(null)}>
+                    <div className="flex items-center justify-between space-x-3">
+                        <div className="flex items-center space-x-2 flex-1">
+                            {notificacion.tipo === 'exito' ? (
+                                <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            )}
+                            <span className="font-medium text-sm sm:text-base flex-1">{notificacion.mensaje}</span>
+                        </div>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setNotificacion(null);
+                            }}
+                            className="ml-2 text-white hover:text-gray-200 flex-shrink-0"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
-                        )}
-                        <span className="font-medium">{notificacion.mensaje}</span>
+                        </button>
                     </div>
                 </div>
             )}

@@ -8,11 +8,12 @@ import {
     MinusIcon,
     PlusIcon
 } from '@heroicons/react/24/outline';
+import { getAvatarUrl, getImagenUrl } from '@/Utils/avatarUtils';
 
 export default function ProductoDetalle({ cliente, producto, productosRelacionados, estadisticasComentarios, puedeComentarInfo }) {
     const [cantidad, setCantidad] = useState(1);
     const [imagenSeleccionada, setImagenSeleccionada] = useState(
-        producto.imagen_principal ? `/storage/${producto.imagen_principal}` : null
+        producto.imagen_principal ? getImagenUrl(producto.imagen_principal) : null
     );
     const [mostrarFormularioComentario, setMostrarFormularioComentario] = useState(false);
     const [notificacion, setNotificacion] = useState(null);
@@ -38,12 +39,6 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
     };
 
     // Funciones auxiliares para manejo de medios
-    const getImagenUrl = (imagen) => {
-        if (!imagen) return null;
-        if (imagen.startsWith('http')) return imagen;
-        return `/storage/${imagen}`;
-    };
-
     const getVideoUrl = () => {
         // Priorizar video_file (subido) sobre video_url
         if (producto.video_file) {
@@ -62,7 +57,7 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                 mensaje: 'No hay suficiente stock disponible',
                 tipo: 'error'
             });
-            setTimeout(() => setNotificacion(null), 3000);
+            setTimeout(() => setNotificacion(null), 5000);
             return;
         }
 
@@ -84,12 +79,13 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
             const data = await response.json();
 
             if (response.ok) {
-                // Mostrar notificación de éxito
+                // Mostrar notificación de éxito con el mensaje del servidor
+                const mensaje = data.message || `¡${cantidad} ${producto.nombre}${cantidad > 1 ? 's' : ''} agregado${cantidad > 1 ? 's' : ''} al carrito!`;
                 setNotificacion({
-                    mensaje: `¡${cantidad} ${producto.nombre}${cantidad > 1 ? 's' : ''} agregado${cantidad > 1 ? 's' : ''} al carrito!`,
+                    mensaje: mensaje,
                     tipo: 'exito'
                 });
-                setTimeout(() => setNotificacion(null), 3000);
+                setTimeout(() => setNotificacion(null), 5000);
 
                 // Actualizar contador del carrito si existe el evento
                 const evento = new CustomEvent('carritoActualizado', { detail: data.carrito_count });
@@ -102,7 +98,7 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                     mensaje: data.message || 'Error al agregar el producto al carrito',
                     tipo: 'error'
                 });
-                setTimeout(() => setNotificacion(null), 3000);
+                setTimeout(() => setNotificacion(null), 5000);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -110,7 +106,7 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                 mensaje: 'Error al conectar con el servidor',
                 tipo: 'error'
             });
-            setTimeout(() => setNotificacion(null), 3000);
+            setTimeout(() => setNotificacion(null), 5000);
         } finally {
             setAgregandoCarrito(false);
         }
@@ -502,7 +498,7 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                                             <div className="flex-shrink-0">
                                                 {comentario.user?.avatar_url ? (
                                                     <img
-                                                        src={comentario.user.avatar_url}
+                                                        src={getAvatarUrl(comentario.user.avatar_url)}
                                                         alt={comentario.user.name}
                                                         className="object-cover w-10 h-10 rounded-full"
                                                     />
@@ -562,7 +558,7 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                                             <div className="flex items-center justify-center flex-shrink-0 h-20 sm:h-32 bg-gradient-to-br from-amber-100 to-orange-100">
                                                 {productoRelacionado.imagen_principal ? (
                                                     <img
-                                                        src={productoRelacionado.imagen_principal}
+                                                        src={getImagenUrl(productoRelacionado.imagen_principal)}
                                                         alt={productoRelacionado.nombre}
                                                         className="object-cover w-full h-full"
                                                     />
@@ -591,21 +587,36 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
 
             {/* Notificación animada */}
             {notificacion && (
-                <div className={`fixed top-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto z-[150] px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg transform transition-all duration-500 ${notificacion.tipo === 'exito'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-red-500 text-white'
-                    } animate-bounce`}>
-                    <div className="flex items-center space-x-2">
-                        {notificacion.tipo === 'exito' ? (
-                            <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        ) : (
-                            <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`fixed top-36 right-4 z-[9999999] px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-xl transform transition-all duration-500 ${notificacion.tipo === 'exito'
+                    ? 'bg-green-500 text-white border-l-4 border-green-600'
+                    : 'bg-red-500 text-white border-l-4 border-red-600'
+                    } animate-pulse hover:animate-none cursor-pointer max-w-sm backdrop-blur-sm border border-white/20`}
+                    style={{zIndex: 999999999}}
+                    onClick={() => setNotificacion(null)}>
+                    <div className="flex items-center justify-between space-x-3">
+                        <div className="flex items-center space-x-2 flex-1">
+                            {notificacion.tipo === 'exito' ? (
+                                <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            )}
+                            <span className="font-medium text-sm sm:text-base flex-1">{notificacion.mensaje}</span>
+                        </div>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setNotificacion(null);
+                            }}
+                            className="ml-2 text-white hover:text-gray-200 flex-shrink-0"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
-                        )}
-                        <span className="font-medium text-sm sm:text-base">{notificacion.mensaje}</span>
+                        </button>
                     </div>
                 </div>
             )}

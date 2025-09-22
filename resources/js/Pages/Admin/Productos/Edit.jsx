@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { ArrowLeftIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { getImagenUrl } from '@/Utils/avatarUtils';
 
 export default function EditProducto({ producto, categorias }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -27,11 +28,6 @@ export default function EditProducto({ producto, categorias }) {
         post(route('admin.productos.update', producto.id), {
             forceFormData: true
         });
-    };
-
-    const getImagenUrl = (imagen) => {
-        if (!imagen) return null;
-        return imagen.startsWith('http') ? imagen : `/storage/${imagen}`;
     };
 
     const handleImageChange = (e) => {

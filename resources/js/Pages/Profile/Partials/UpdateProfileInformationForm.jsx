@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
+import { getAvatarUrl } from '@/Utils/avatarUtils';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -54,10 +55,9 @@ export default function UpdateProfileInformation({
         }
     };
 
-    const getAvatarUrl = () => {
+    const getDisplayAvatarUrl = () => {
         if (previewImage) return previewImage;
-        if (user.avatar_url) return `/storage/${user.avatar_url}`;
-        return null;
+        return getAvatarUrl(user.avatar_url);
     };
 
     return (
@@ -67,9 +67,9 @@ export default function UpdateProfileInformation({
                 <div className="text-center">
                     <div className="mb-6">
                         <div className="relative inline-block">
-                            {getAvatarUrl() ? (
+                            {getDisplayAvatarUrl() ? (
                                 <img
-                                    src={getAvatarUrl()}
+                                    src={getDisplayAvatarUrl()}
                                     alt="Avatar"
                                     className="w-32 h-32 rounded-full object-cover border-4 border-amber-200 shadow-lg"
                                 />
@@ -110,7 +110,7 @@ export default function UpdateProfileInformation({
                             Cambiar Foto
                         </button>
                         
-                        {(getAvatarUrl() || data.avatar) && (
+                        {(getDisplayAvatarUrl() || data.avatar) && (
                             <button
                                 type="button"
                                 onClick={removeAvatar}

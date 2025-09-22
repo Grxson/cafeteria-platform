@@ -6,6 +6,7 @@ import {
     PencilIcon,
     TrashIcon
 } from '@heroicons/react/24/outline';
+import { getImagenUrl } from '@/Utils/avatarUtils';
 
 export default function IndexProductos({ productos }) {
     const [eliminando, setEliminando] = useState(null);
@@ -73,7 +74,7 @@ export default function IndexProductos({ productos }) {
                                                         <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
                                                             {producto.imagen_principal ? (
                                                                 <img
-                                                                    src={`/storage/${producto.imagen_principal}`}
+                                                                    src={getImagenUrl(producto.imagen_principal)}
                                                                     alt={producto.nombre}
                                                                     className="w-full h-full object-cover rounded-lg"
                                                                 />

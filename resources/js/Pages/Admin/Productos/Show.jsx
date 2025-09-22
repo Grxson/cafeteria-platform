@@ -9,12 +9,9 @@ import {
     PhotoIcon,
     VideoCameraIcon
 } from '@heroicons/react/24/outline';
+import { getImagenUrl } from '@/Utils/avatarUtils';
 
 export default function ShowProducto({ producto }) {
-    const getImagenUrl = (imagen) => {
-        if (!imagen) return null;
-        return imagen.startsWith('http') ? imagen : `/storage/${imagen}`;
-    };
 
     return (
         <AuthenticatedLayout
