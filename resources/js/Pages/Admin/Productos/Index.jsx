@@ -1,31 +1,252 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     EyeIcon,
     PencilIcon,
-    TrashIcon
+    TrashIcon,
+    ExclamationTriangleIcon,
+    PowerIcon,
+    PlayIcon,
+    PauseIcon,
+    MagnifyingGlassIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ChartBarIcon,
+    CurrencyDollarIcon,
+    CubeIcon,
+    CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { getImagenUrl } from '@/Utils/avatarUtils';
 
-export default function IndexProductos({ productos }) {
-    const [eliminando, setEliminando] = useState(null);
-
-    const eliminarProducto = async (producto) => {
-        if (!confirm(`¿Estás seguro de que deseas eliminar el producto "${producto.nombre}"?`)) {
-            return;
+// Componente Modal que se renderiza en el body
+function ModalEliminar({ isOpen, producto, onClose, onConfirm, procesando }) {
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
         }
+        
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
-        setEliminando(producto.id);
+    if (!isOpen) return null;
+
+    return createPortal(
+        <div 
+            className="fixed inset-0 bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
+            style={{ zIndex: 999999 }}
+        >
+            <div 
+                className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border border-red-200 animate-in fade-in zoom-in duration-200"
+                style={{ zIndex: 1000000 }}
+            >
+                <div className="flex items-center justify-center mb-6">
+                    <div className="flex-shrink-0 w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center">
+                        <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
+                    </div>
+                </div>
+                
+                <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                        ¿Eliminar Producto?
+                    </h3>
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
+                        <p className="text-sm text-gray-700 mb-2">
+                            <strong>Producto:</strong> {producto?.nombre}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                            Esta acción no se puede deshacer. El producto será eliminado permanentemente del sistema.
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="flex space-x-3">
+                    <button
+                        onClick={onClose}
+                        disabled={procesando}
+                        className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={procesando}
+                        className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center"
+                    >
+                        {procesando ? (
+                            <div className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Eliminando...
+                            </div>
+                        ) : (
+                            'Eliminar'
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+export default function Index() {
+    // Estados del DataTable
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [filteredItems, setFilteredItems] = useState(0);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [sortColumn, setSortColumn] = useState(0);
+    const [sortDirection, setSortDirection] = useState('asc');
+    
+    // Estados para estadísticas
+    const [stats, setStats] = useState({
+        total_productos: 0,
+        productos_activos: 0,
+        productos_inactivos: 0,
+        stock_total: 0,
+        valor_inventario: 0
+    });
+    
+    // Estados para acciones
+    const [procesando, setProcesando] = useState(null);
+    const [modalEliminar, setModalEliminar] = useState({ abierto: false, producto: null });
+
+    // Cargar estadísticas
+    const loadStats = async () => {
+        try {
+            const response = await fetch('/admin/reportes/estadisticas');
+            const statsData = await response.json();
+            setStats(statsData);
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    };
+
+    // Función principal cargarDT
+    const cargarDT = async () => {
+        setLoading(true);
+        try {
+            const params = {
+                draw: 1,
+                start: (currentPage - 1) * itemsPerPage,
+                length: itemsPerPage,
+                search: { value: searchTerm },
+                order: [{
+                    column: sortColumn,
+                    dir: sortDirection
+                }]
+            };
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            const response = await fetch('/admin/productos/cargar-dt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(params)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('DataTable response:', result); // Para debug
+            
+            setData(result.data || []);
+            setTotalItems(result.recordsTotal || 0);
+            setFilteredItems(result.recordsFiltered || 0);
+            setTotalPages(Math.ceil((result.recordsFiltered || 0) / itemsPerPage));
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setData([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSort = (columnIndex) => {
+        if (sortColumn === columnIndex) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(columnIndex);
+            setSortDirection('asc');
+        }
+    };
+
+    const handleSearch = (e) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    useEffect(() => {
+        cargarDT();
+        loadStats();
+    }, [currentPage, itemsPerPage, searchTerm, sortColumn, sortDirection]);
+    
+    // Cargar datos al montar el componente
+    useEffect(() => {
+        cargarDT();
+        loadStats();
+    }, []);
+
+    // Funciones para acciones de productos
+    const confirmarEliminar = (producto) => {
+        setModalEliminar({ abierto: true, producto });
+    };
+
+    const eliminarProducto = async () => {
+        if (!modalEliminar.producto) return;
+
+        setProcesando(modalEliminar.producto.id);
 
         try {
-            await router.delete(route('admin.productos.destroy', producto.id));
+            await router.delete(route('admin.productos.destroy', modalEliminar.producto.id));
+            // Recargar datos después de eliminar
+            await cargarDT();
+            await loadStats();
         } catch (error) {
             console.error('Error al eliminar producto:', error);
         } finally {
-            setEliminando(null);
+            setProcesando(null);
+            setModalEliminar({ abierto: false, producto: null });
         }
     };
+
+    const toggleEstado = async (producto) => {
+        setProcesando(producto.id);
+        
+        try {
+            await router.patch(route('admin.productos.toggle-status', producto.id));
+            // Recargar datos después de cambiar estado
+            await cargarDT();
+            await loadStats();
+        } catch (error) {
+            console.error('Error al cambiar estado del producto:', error);
+        } finally {
+            setProcesando(null);
+        }
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -44,169 +265,320 @@ export default function IndexProductos({ productos }) {
                 </div>
             }
         >
-            <Head title="Productos - CafeTech" />
+            <Head title="Productos" />
 
-            <div className="py-6 sm:py-8">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    {productos.data.length > 0 ? (
-                        <div className="bg-white shadow-xl rounded-2xl border border-amber-200 overflow-hidden">
-                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
-                                <h3 className="text-xl font-bold text-white">Lista de Productos ({productos.total})</h3>
+            <div className="py-6">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                    
+                    {/* Estadísticas Dashboard */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-2xl border border-blue-200 shadow-lg">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-blue-600 font-medium">Total Productos</p>
+                                    <p className="text-2xl font-bold text-blue-800">{stats.total_productos || 0}</p>
+                                </div>
+                                <div className="bg-blue-200 p-3 rounded-xl">
+                                    <CubeIcon className="w-6 h-6 text-blue-600" />
+                                </div>
                             </div>
+                        </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead className="bg-amber-50">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-2xl border border-green-200 shadow-lg">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-green-600 font-medium">Productos Activos</p>
+                                    <p className="text-2xl font-bold text-green-800">{stats.productos_activos || 0}</p>
+                                </div>
+                                <div className="bg-green-200 p-3 rounded-xl">
+                                    <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-purple-50 to-violet-100 p-6 rounded-2xl border border-purple-200 shadow-lg">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-purple-600 font-medium">Stock Total</p>
+                                    <p className="text-2xl font-bold text-purple-800">{stats.stock_total || 0}</p>
+                                </div>
+                                <div className="bg-purple-200 p-3 rounded-xl">
+                                    <ChartBarIcon className="w-6 h-6 text-purple-600" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-100 p-6 rounded-2xl border border-amber-200 shadow-lg">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-amber-600 font-medium">Valor Inventario</p>
+                                    <p className="text-xl font-bold text-amber-800">${Number(stats.valor_inventario || 0).toFixed(2)}</p>
+                                </div>
+                                <div className="bg-amber-200 p-3 rounded-xl">
+                                    <CurrencyDollarIcon className="w-6 h-6 text-amber-600" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* DataTable */}
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-amber-200">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-amber-800">Lista de Productos</h3>
+                                    <p className="text-sm text-amber-600">
+                                        Mostrando {data.length} de {filteredItems} productos
+                                        {searchTerm && ` (filtrado de ${totalItems} total)`}
+                                    </p>
+                                </div>
+                                
+                                <div className="flex items-center space-x-4">
+                                    <div className="relative">
+                                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar productos..."
+                                            value={searchTerm}
+                                            onChange={handleSearch}
+                                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                        className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                    >
+                                        <option value={5}>5 por página</option>
+                                        <option value={10}>10 por página</option>
+                                        <option value={25}>25 por página</option>
+                                        <option value={50}>50 por página</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="overflow-hidden">
+                            <table className="w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th 
+                                            onClick={() => handleSort(1)}
+                                            className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-2/5"
+                                        >
+                                            Producto {sortColumn === 1 && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th 
+                                            onClick={() => handleSort(2)}
+                                            className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-1/6"
+                                        >
+                                            Precio {sortColumn === 2 && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th 
+                                            onClick={() => handleSort(3)}
+                                            className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-1/6"
+                                        >
+                                            Stock {sortColumn === 3 && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th 
+                                            onClick={() => handleSort(4)}
+                                            className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-1/6"
+                                        >
+                                            Estado {sortColumn === 4 && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                                            Acciones
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {loading ? (
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Producto</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Categoría</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Precio</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Stock</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Estado</th>
-                                            <th className="px-6 py-4 text-center text-sm font-medium text-gray-700">Acciones</th>
+                                            <td colSpan="5" className="px-6 py-8 text-center">
+                                                <div className="flex items-center justify-center">
+                                                    <svg className="animate-spin h-8 w-8 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <span className="ml-2 text-gray-600">Cargando productos...</span>
+                                                </div>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {productos.data.map((producto) => (
-                                            <tr key={producto.id} className="hover:bg-amber-50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center">
-                                                        <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
-                                                            {producto.imagen_principal ? (
-                                                                <img
-                                                                    src={getImagenUrl(producto.imagen_principal)}
-                                                                    alt={producto.nombre}
-                                                                    className="w-full h-full object-cover rounded-lg"
-                                                                />
-                                                            ) : (
-                                                                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                                </svg>
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-semibold text-gray-900">{producto.nombre}</div>
-                                                            <div className="text-sm text-gray-500 line-clamp-1">
-                                                                {producto.descripcion}
-                                                            </div>
+                                    ) : data.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                                                No se encontraron productos
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        data.map((producto) => (
+                                            <tr key={producto.id} className="hover:bg-gray-50">
+                                                {/* Producto con imagen, nombre, descripción y categoría */}
+                                                <td className="px-3 py-3">
+                                                    <div className="flex items-center space-x-3">
+                                                        <img 
+                                                            src={getImagenUrl(producto.imagen_principal)} 
+                                                            alt={producto.nombre}
+                                                            className="w-10 h-10 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+                                                        />
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="text-sm font-medium text-gray-900 truncate">{producto.nombre}</div>
+                                                            <div className="text-xs text-gray-500 truncate">{producto.descripcion}</div>
+                                                            <span className="inline-flex px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mt-1">
+                                                                {producto.categoria}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                        {producto.categoria_producto?.nombre || 'Sin categoría'}
+                                                {/* Precio */}
+                                                <td className="px-2 py-3 text-center">
+                                                    <span className="text-sm font-semibold text-green-600">${producto.precio}</span>
+                                                </td>
+                                                {/* Stock */}
+                                                <td className="px-2 py-3 text-center">
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                        producto.stock > 10 ? 'bg-green-100 text-green-800' :
+                                                        producto.stock > 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        {producto.stock}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="text-lg font-semibold text-amber-600">
-                                                        ${parseFloat(producto.precio).toFixed(2)}
+                                                {/* Estado */}
+                                                <td className="px-2 py-3 text-center">
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                        producto.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        {producto.estado}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${producto.stock > 10
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : producto.stock > 0
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                        }`}>
-                                                        {producto.stock} unidades
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${producto.estado === 'activo'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
-                                                        }`}>
-                                                        {producto.estado === 'activo' ? 'Activo' : 'Inactivo'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <div className="flex items-center justify-center space-x-2">
-                                                        {/* Ver producto */}
+                                                {/* Acciones */}
+                                                <td className="px-2 py-3 text-center">
+                                                    <div className="flex items-center justify-center space-x-1">
+                                                        {/* Ver */}
                                                         <Link
                                                             href={route('admin.productos.show', producto.id)}
-                                                            className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                                                            className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
                                                             title="Ver producto"
                                                         >
-                                                            <EyeIcon className="w-4 h-4" />
+                                                            <EyeIcon className="w-3.5 h-3.5" />
                                                         </Link>
 
-                                                        {/* Editar producto */}
+                                                        {/* Editar */}
                                                         <Link
                                                             href={route('admin.productos.edit', producto.id)}
-                                                            className="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 transition-colors"
+                                                            className="text-amber-600 hover:text-amber-900 p-1 rounded transition-colors"
                                                             title="Editar producto"
                                                         >
-                                                            <PencilIcon className="w-4 h-4" />
+                                                            <PencilIcon className="w-3.5 h-3.5" />
                                                         </Link>
 
-                                                        {/* Eliminar producto */}
+                                                        {/* Toggle Estado */}
                                                         <button
-                                                            onClick={() => eliminarProducto(producto)}
-                                                            disabled={eliminando === producto.id}
-                                                            className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-                                                            title="Eliminar producto"
+                                                            onClick={() => toggleEstado(producto)}
+                                                            disabled={procesando === producto.id}
+                                                            className={`p-1 rounded transition-colors ${
+                                                                producto.estado === 'activo' 
+                                                                    ? 'text-red-600 hover:text-red-900' 
+                                                                    : 'text-green-600 hover:text-green-900'
+                                                            }`}
+                                                            title={producto.estado === 'activo' ? 'Desactivar' : 'Activar'}
                                                         >
-                                                            {eliminando === producto.id ? (
-                                                                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                                            {procesando === producto.id ? (
+                                                                <svg className="animate-spin w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                </svg>
+                                                            ) : producto.estado === 'activo' ? (
+                                                                <PauseIcon className="w-3.5 h-3.5" />
                                                             ) : (
-                                                                <TrashIcon className="w-4 h-4" />
+                                                                <PlayIcon className="w-3.5 h-3.5" />
                                                             )}
                                                         </button>
+
+                                                        {/* Eliminar (solo si está inactivo) */}
+                                                        {producto.estado === 'inactivo' && (
+                                                            <button
+                                                                onClick={() => confirmarEliminar(producto)}
+                                                                disabled={procesando === producto.id}
+                                                                className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
+                                                                title="Eliminar producto"
+                                                            >
+                                                                <TrashIcon className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
-                            {/* Paginación */}
-                            {productos.links && productos.links.length > 3 && (
-                                <div className="bg-amber-50 px-6 py-4 border-t border-amber-200">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-sm text-gray-700">
-                                            Mostrando {productos.from} - {productos.to} de {productos.total} productos
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            {productos.links.map((link, index) => (
-                                                <Link
-                                                    key={index}
-                                                    href={link.url || '#'}
-                                                    className={`px-3 py-2 text-sm rounded-lg ${link.active
-                                                        ? 'bg-amber-500 text-white'
-                                                        : 'bg-white text-gray-700 hover:bg-amber-100'
-                                                        } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
+                        {/* Paginación */}
+                        {totalPages > 1 && (
+                            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                                <div className="flex items-center space-x-4">
+                                    <span className="text-sm text-gray-700">
+                                        Página {currentPage} de {totalPages}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                        ({filteredItems} registros total)
+                                    </span>
                                 </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="bg-white shadow-xl rounded-2xl border border-amber-200 p-12 text-center">
-                            <div className="bg-amber-100 rounded-full p-6 mx-auto mb-6 w-24 h-24 flex items-center justify-center">
-                                <svg className="w-12 h-12 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                </svg>
+                                
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronLeftIcon className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                        const pageNumber = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                                        if (pageNumber > totalPages) return null;
+                                        
+                                        return (
+                                            <button
+                                                key={pageNumber}
+                                                onClick={() => handlePageChange(pageNumber)}
+                                                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                                                    currentPage === pageNumber
+                                                        ? 'bg-amber-600 text-white'
+                                                        : 'border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                {pageNumber}
+                                            </button>
+                                        );
+                                    })}
+                                    
+                                    <button
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronRightIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay productos registrados</h3>
-                            <p className="text-gray-500 mb-6">Comienza creando tu primer producto para la cafetería.</p>
-                            <Link
-                                href={route('admin.productos.create')}
-                                className="inline-flex items-center bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold shadow-lg"
-                            >
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Crear Primer Producto
-                            </Link>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Modal de confirmación de eliminación */}
+            <ModalEliminar
+                isOpen={modalEliminar.abierto}
+                producto={modalEliminar.producto}
+                onClose={() => setModalEliminar({ abierto: false, producto: null })}
+                onConfirm={eliminarProducto}
+                procesando={procesando === modalEliminar.producto?.id}
+            />
         </AuthenticatedLayout>
     );
 }

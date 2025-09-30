@@ -119,6 +119,11 @@ class ClienteController extends Controller
     {
         $cliente = Auth::user();
         
+        // Verificar que el producto esté activo
+        if ($producto->estado !== 'activo') {
+            abort(404, 'Producto no disponible');
+        }
+        
         // Cargar las relaciones necesarias
         $producto->load(['categoriaProducto', 'comentarios.user']);
         

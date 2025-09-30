@@ -52,7 +52,14 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     })->name('dashboard');
 
     // Gestión de productos
+    Route::patch('productos/{producto}/toggle-status', [ProductoController::class, 'toggleStatus'])->name('productos.toggle-status');
+    Route::post('productos/cargar-dt', [ProductoController::class, 'cargarDT'])->name('productos.cargar-dt');
     Route::resource('productos', ProductoController::class);
+    
+    // Reportes y DataTable
+    Route::get('reportes', [App\Http\Controllers\Admin\ReportesController::class, 'index'])->name('reportes.index');
+    Route::post('reportes/cargar-dt', [App\Http\Controllers\Admin\ReportesController::class, 'cargarDT'])->name('reportes.cargar-dt');
+    Route::get('reportes/estadisticas', [App\Http\Controllers\Admin\ReportesController::class, 'estadisticas'])->name('reportes.estadisticas');
 });
 
 // Rutas de perfil de usuario

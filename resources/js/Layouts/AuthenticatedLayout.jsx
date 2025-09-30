@@ -106,6 +106,23 @@ export default function AuthenticatedLayout({ header, children }) {
                                         Tienda
                                     </NavLink>
                                 )}
+
+                                {user?.rol === 'admin' && (
+                                    <>
+                                        <NavLink
+                                            href={route('admin.productos.index')}
+                                            active={route().current('admin.productos.*')}
+                                        >
+                                            Productos
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('reportes.index')}
+                                            active={route().current('reportes.*')}
+                                        >
+                                            Reportes
+                                        </NavLink>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -429,6 +446,45 @@ export default function AuthenticatedLayout({ header, children }) {
                                     <p className="text-xs text-gray-500 mt-0.5">Explorar productos</p>
                                 </div>
                             </ResponsiveNavLink>
+                        )}
+
+                        {/* Menú de administrador */}
+                        {user?.rol === 'admin' && (
+                            <>
+                                <ResponsiveNavLink
+                                    href={route('admin.productos.index')}
+                                    active={route().current('admin.productos.*')}
+                                    className="flex items-center px-6 py-4 border-b border-amber-100 hover:bg-amber-50 transition-all duration-200 group"
+                                    onClick={() => setShowingNavigationDropdown(false)}
+                                >
+                                    <div className="p-2 rounded-lg bg-green-100 group-hover:bg-green-200 transition-colors mr-4">
+                                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-800 font-semibold">Productos</span>
+                                        <p className="text-xs text-gray-500 mt-0.5">Gestión de inventario</p>
+                                    </div>
+                                </ResponsiveNavLink>
+
+                                <ResponsiveNavLink
+                                    href={route('reportes.index')}
+                                    active={route().current('reportes.*')}
+                                    className="flex items-center px-6 py-4 border-b border-amber-100 hover:bg-amber-50 transition-all duration-200 group"
+                                    onClick={() => setShowingNavigationDropdown(false)}
+                                >
+                                    <div className="p-2 rounded-lg bg-purple-100 group-hover:bg-purple-200 transition-colors mr-4">
+                                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-800 font-semibold">Reportes</span>
+                                        <p className="text-xs text-gray-500 mt-0.5">Análisis y DataTable</p>
+                                    </div>
+                                </ResponsiveNavLink>
+                            </>
                         )}
 
                         {/* Mi Perfil */}
