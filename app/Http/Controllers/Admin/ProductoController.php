@@ -129,41 +129,142 @@ class ProductoController extends Controller
      */
     public function store(StoreProductoRequest $request)
     {
+        \Log::info('=== INICIO ProductoController store ===');
+        \Log::info('Raw request data BEFORE validation', [
+            'all_input' => $request->all(),
+            'input_except_files' => $request->except(['imagen_principal', 'galeria_imagenes', 'video_file']),
+            'has_imagen_principal' => $request->hasFile('imagen_principal'),
+            'has_galeria_imagenes' => $request->hasFile('galeria_imagenes'),
+            'has_video_file' => $request->hasFile('video_file'),
+            'method' => $request->method(),
+            'content_type' => $request->header('Content-Type'),
+            'user_id' => auth()->id(),
+        ]);
+        
+        \Log::info('ProductoController store method called', [
+            'user_id' => auth()->id(),
+            'request_data' => $request->except(['imagen_principal', 'galeria_imagenes', 'video_file']),
+            'has_imagen_principal' => $request->hasFile('imagen_principal'),
+            'has_galeria_imagenes' => $request->hasFile('galeria_imagenes'),
+            'galeria_imagenes_count' => $request->hasFile('galeria_imagenes') ? count($request->file('galeria_imagenes')) : 0,
+            'has_video_file' => $request->hasFile('video_file'),
+        ]);
+
         try {
-            $data = $request->validated();
+            // Validar archivos individualmente
+            if ($request->hasFile('galeria_imagenes')) {
+                $galeriaFiles = $request->file('galeria_imagenes');
+                foreach ($galeriaFiles as $index => $file) {
+                    if ($file && $file->isValid() && $file->getSize() > 0) {
+                        \Log::info("Galeria file {$index} - VALID", [
+                            'original_name' => $file->getClientOriginalName(),
+                            'mime_type' => $file->getMimeType(),
+                            'size' => $file->getSize(),
+                            'is_valid' => $file->isValid(),
+                            'error' => $file->getError()
+                        ]);
+                    } else {
+                        \Log::warning("Galeria file {$index} - INVALID", [
+                            'is_valid' => $file ? $file->isValid() : false,
+                            'size' => $file ? $file->getSize() : 0,
+                            'error' => $file ? $file->getError() : 'null',
+                            'original_name' => $file ? ($file->getClientOriginalName() ?? 'empty') : 'null file'
+                        ]);
+                    }
+                }
+            }
+
+            $producto = new Producto();
+            $producto->nombre = $request->nombre;
+            $producto->descripcion = $request->descripcion;
+            $producto->precio = $request->precio;
+            $producto->stock = $request->stock;
+            $producto->categoria_producto_id = $request->categoria_producto_id;
+            $producto->estado = $request->estado;
 
             // Manejar imagen principal
             if ($request->hasFile('imagen_principal')) {
-                $data['imagen_principal'] = $request->file('imagen_principal')
-                    ->store('productos/imagenes', 'public');
+                $imagenPrincipal = $request->file('imagen_principal');
+                $imagenPrincipalPath = $imagenPrincipal->store('productos/imagenes', 'public');
+                $producto->imagen_principal = $imagenPrincipalPath;
+                
+                \Log::info('Imagen principal stored', [
+                    'path' => $imagenPrincipalPath
+                ]);
             }
 
-            // Manejar galería de imágenes
+            // Manejar galería de imágenes - solo procesar archivos válidos
             if ($request->hasFile('galeria_imagenes')) {
-                $galeria = [];
-                foreach ($request->file('galeria_imagenes') as $imagen) {
-                    $galeria[] = $imagen->store('productos/galeria', 'public');
+                $galeriaPaths = [];
+                $galeriaFiles = $request->file('galeria_imagenes');
+                
+                foreach ($galeriaFiles as $index => $imagen) {
+                    // Solo procesar archivos válidos
+                    if ($imagen && $imagen->isValid() && $imagen->getSize() > 0) {
+                        try {
+                            $path = $imagen->store('productos/galeria', 'public');
+                            $galeriaPaths[] = $path;
+                            
+                            \Log::info("Galeria image {$index} stored successfully", [
+                                'path' => $path,
+                                'original_name' => $imagen->getClientOriginalName()
+                            ]);
+                        } catch (\Exception $e) {
+                            \Log::error("Failed to store galeria image {$index}", [
+                                'error' => $e->getMessage(),
+                                'original_name' => $imagen->getClientOriginalName()
+                            ]);
+                        }
+                    } else {
+                        \Log::info("Skipping invalid galeria image at index {$index}", [
+                            'is_valid' => $imagen ? $imagen->isValid() : false,
+                            'size' => $imagen ? $imagen->getSize() : 0,
+                            'error_code' => $imagen ? $imagen->getError() : 'null'
+                        ]);
+                    }
                 }
-                $data['galeria_imagenes'] = $galeria;
+                
+                if (!empty($galeriaPaths)) {
+                    // No usar json_encode aquí porque el cast 'array' del modelo lo hará automáticamente
+                    $producto->galeria_imagenes = $galeriaPaths;
+                    \Log::info('Galeria images saved', [
+                        'count' => count($galeriaPaths),
+                        'paths' => $galeriaPaths
+                    ]);
+                }
             }
 
-            // Manejar archivo de video
+            // Manejar video
             if ($request->hasFile('video_file')) {
-                $data['video_file'] = $request->file('video_file')
-                    ->store('productos/videos', 'public');
+                $videoFile = $request->file('video_file');
+                $videoPath = $videoFile->store('productos/videos', 'public');
+                $producto->video_file = $videoPath;
+                
+                \Log::info('Video file stored', [
+                    'path' => $videoPath
+                ]);
+            } elseif ($request->video_url) {
+                $producto->video_url = $request->video_url;
             }
 
-            // Crear el producto
-            $producto = Producto::create($data);
+            $producto->save();
 
-            return redirect()
-                ->route('admin.productos.index')
-                ->with('success', 'Producto creado exitosamente.');
+            \Log::info('Producto created successfully', [
+                'producto_id' => $producto->id,
+                'nombre' => $producto->nombre
+            ]);
+
+            return redirect()->route('admin.productos.index')->with('success', 'Producto creado exitosamente.');
+            
         } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->withErrors(['error' => 'Error al crear el producto: ' . $e->getMessage()]);
+            \Log::error('Error creating producto', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->withInput()->withErrors(['error' => 'Ocurrió un error al crear el producto: ' . $e->getMessage()]);
         }
     }
 
@@ -173,6 +274,31 @@ class ProductoController extends Controller
     public function show(Producto $producto)
     {
         $producto->load('categoriaProducto');
+
+        // Corregir el problema de doble encoding en galeria_imagenes
+        $galeriaImagenes = $producto->getAttributes()['galeria_imagenes'] ?? null;
+        
+        if ($galeriaImagenes) {
+            // Primer intento de decodificación
+            $decoded = json_decode($galeriaImagenes, true);
+            
+            // Si el resultado es un string, significa que hay doble encoding
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+            
+            // Asegurar que sea un array
+            $producto->galeria_imagenes = is_array($decoded) ? $decoded : [];
+        } else {
+            $producto->galeria_imagenes = [];
+        }
+
+        \Log::info('Show method - galeria_imagenes processing', [
+            'producto_id' => $producto->id,
+            'raw_value' => $galeriaImagenes,
+            'processed_value' => $producto->galeria_imagenes,
+            'is_array' => is_array($producto->galeria_imagenes)
+        ]);
 
         return Inertia::render('Admin/Productos/Show', [
             'producto' => $producto
@@ -227,12 +353,14 @@ class ProductoController extends Controller
 
             // Manejar imagen principal
             if ($request->hasFile('imagen_principal')) {
-                // Eliminar imagen anterior si existe
-                if ($producto->imagen_principal) {
+                // Eliminar imagen anterior si existe (solo si no es URL externa)
+                if ($producto->imagen_principal && !str_starts_with($producto->imagen_principal, 'http')) {
                     Storage::disk('public')->delete($producto->imagen_principal);
+                    \Log::info('Eliminada imagen principal anterior: ' . $producto->imagen_principal);
                 }
                 $data['imagen_principal'] = $request->file('imagen_principal')
                     ->store('productos/imagenes', 'public');
+                \Log::info('Nueva imagen principal guardada: ' . $data['imagen_principal']);
             }
 
             // Manejar galería de imágenes
@@ -275,9 +403,11 @@ class ProductoController extends Controller
                 // Eliminar video anterior si existe
                 if ($producto->video_file) {
                     Storage::disk('public')->delete($producto->video_file);
+                    \Log::info('Eliminado video anterior: ' . $producto->video_file);
                 }
                 $data['video_file'] = $request->file('video_file')
                     ->store('productos/videos', 'public');
+                \Log::info('Nuevo video guardado: ' . $data['video_file']);
             }
 
             // Actualizar el producto
@@ -331,6 +461,9 @@ class ProductoController extends Controller
                     ->withErrors(['error' => 'Solo se pueden eliminar productos inactivos. Desactive el producto primero.']);
             }
 
+            // Eliminar archivos físicamente del storage antes del soft delete
+            $this->eliminarArchivosProducto($producto);
+
             // Soft delete: cambiar estado a 'eliminado' en lugar de eliminar físicamente
             $producto->update(['estado' => 'eliminado']);
 
@@ -341,6 +474,38 @@ class ProductoController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Error al eliminar el producto: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Eliminar archivos de imagen y video del producto del storage
+     */
+    private function eliminarArchivosProducto(Producto $producto)
+    {
+        try {
+            // Eliminar imagen principal
+            if ($producto->imagen_principal && !str_starts_with($producto->imagen_principal, 'http')) {
+                Storage::disk('public')->delete($producto->imagen_principal);
+                \Log::info('Eliminada imagen principal: ' . $producto->imagen_principal);
+            }
+
+            // Eliminar galería de imágenes
+            if ($producto->galeria_imagenes && is_array($producto->galeria_imagenes)) {
+                foreach ($producto->galeria_imagenes as $imagen) {
+                    if (!str_starts_with($imagen, 'http')) {
+                        Storage::disk('public')->delete($imagen);
+                        \Log::info('Eliminada imagen de galería: ' . $imagen);
+                    }
+                }
+            }
+
+            // Eliminar archivo de video
+            if ($producto->video_file) {
+                Storage::disk('public')->delete($producto->video_file);
+                \Log::info('Eliminado archivo de video: ' . $producto->video_file);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error eliminando archivos del producto ' . $producto->id . ': ' . $e->getMessage());
         }
     }
 }

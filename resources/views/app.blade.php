@@ -4,6 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        @if(app()->environment('production'))
+        <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https://images.unsplash.com https://ui-avatars.com https://www.youtube.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; font-src 'self' https://fonts.bunny.net;">
+        @endif
+        <meta name="referrer" content="strict-origin-when-cross-origin">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 

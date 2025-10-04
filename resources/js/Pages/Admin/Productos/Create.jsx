@@ -21,9 +21,32 @@ export default function CreateProducto({ categorias }) {
 
     const submit = (e) => {
         e.preventDefault();
+        
+        console.log('Submit function called');
+        console.log('Form data:', data);
+        console.log('Processing state:', processing);
+        
+        // Asegurar que los datos no estén vacíos
+        console.log('Validation check:');
+        console.log('nombre:', data.nombre);
+        console.log('precio:', data.precio);
+        console.log('stock:', data.stock);
+        console.log('categoria_producto_id:', data.categoria_producto_id);
+        console.log('estado:', data.estado);
+        
         post(route('admin.productos.store'), {
             forceFormData: true,
-            onSuccess: () => reset(),
+            preserveState: true,
+            onSuccess: () => {
+                console.log('Success callback called');
+                reset();
+            },
+            onError: (errors) => {
+                console.log('Error callback called:', errors);
+            },
+            onFinish: () => {
+                console.log('Finish callback called');
+            }
         });
     };
 
@@ -40,11 +63,17 @@ export default function CreateProducto({ categorias }) {
     };
 
     const removeImage = (index) => {
-        const newFiles = data.galeria_imagenes.filter((_, i) => i !== index);
-        setData('galeria_imagenes', newFiles);
-
+        // Filtrar archivos y previews
+        const newFiles = data.galeria_imagenes.filter((file, i) => 
+            i !== index && file && file instanceof File && file.size > 0
+        );
         const newPreviews = previewImages.filter((_, i) => i !== index);
+        
+        setData('galeria_imagenes', newFiles);
         setPreviewImages(newPreviews);
+        
+        console.log('Image removed at index:', index);
+        console.log('Remaining files:', newFiles.length);
     };
 
     const handleVideoChange = (e) => {
@@ -208,6 +237,13 @@ export default function CreateProducto({ categorias }) {
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                 />
                                 {errors.galeria_imagenes && <p className="mt-1 text-sm text-red-600">{errors.galeria_imagenes}</p>}
+                                
+                                {/* Mostrar errores específicos por índice */}
+                                {Object.keys(errors).filter(key => key.startsWith('galeria_imagenes.')).map(key => (
+                                    <p key={key} className="mt-1 text-sm text-red-600">
+                                        {errors[key]}
+                                    </p>
+                                ))}
 
                                 {/* Preview de imágenes */}
                                 {previewImages.length > 0 && (

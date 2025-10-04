@@ -13,7 +13,7 @@ import { getAvatarUrl, getImagenUrl } from '@/Utils/avatarUtils';
 export default function ProductoDetalle({ cliente, producto, productosRelacionados, estadisticasComentarios, puedeComentarInfo }) {
     const [cantidad, setCantidad] = useState(1);
     const [imagenSeleccionada, setImagenSeleccionada] = useState(
-        producto.imagen_principal ? getImagenUrl(producto.imagen_principal) : null
+        producto.imagen_principal ?                                                                         getImagenUrl(producto.imagen_principal) : null
     );
     const [mostrarFormularioComentario, setMostrarFormularioComentario] = useState(false);
     const [notificacion, setNotificacion] = useState(null);

@@ -43,7 +43,7 @@ class AuthenticatedSessionController extends Controller
             case 'gestor':
                 return redirect()->intended(route('admin.dashboard'));
             case 'cliente':
-                return redirect()->intended(route('clientes.dashboard'));
+                return redirect()->intended(route('clientes.tienda'));
             default:
                 // Si no tiene rol definido, redirigir al login
                 return redirect()->route('login')->with('error', 'Rol de usuario no válido.');
@@ -61,14 +61,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        
+        // Limpiar cookies adicionales si existen
+        $response = redirect('/');
+        $response->withCookie(cookie()->forget('laravel_session'));
+        $response->withCookie(cookie()->forget('XSRF-TOKEN'));
 
         Log::info('Logout completado');
 
-        // Para peticiones de Inertia, forzar una redirección completa
-        if ($request->header('X-Inertia')) {
-            return redirect('/')->with('success', 'Sesión cerrada exitosamente.');
-        }
-
-        return redirect('/');
+        return $response->with('success', 'Sesión cerrada exitosamente.');
     }
 }
