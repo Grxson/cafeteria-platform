@@ -54,6 +54,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Gestión de productos
     Route::patch('productos/{producto}/toggle-status', [ProductoController::class, 'toggleStatus'])->name('productos.toggle-status');
+    Route::patch('productos/{producto}/deactivate', [ProductoController::class, 'deactivate'])->name('productos.deactivate');
+    Route::delete('productos/{producto}/delete', [ProductoController::class, 'delete'])->name('productos.delete');
     Route::post('productos/cargar-dt', [ProductoController::class, 'cargarDT'])->name('productos.cargar-dt');
     Route::resource('productos', ProductoController::class);
     

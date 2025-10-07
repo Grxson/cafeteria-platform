@@ -19,6 +19,8 @@ import {
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { getImagenUrl } from '@/Utils/avatarUtils';
+import Toast from '@/Components/Toast';
+import { useNotification } from '@/Hooks/useNotification';
 
 // Componente Modal que se renderiza en el body
 function ModalEliminar({ isOpen, producto, onClose, onConfirm, procesando }) {
@@ -97,7 +99,87 @@ function ModalEliminar({ isOpen, producto, onClose, onConfirm, procesando }) {
     );
 }
 
+// Componente Modal para desactivar productos
+function ModalDesactivar({ isOpen, producto, onClose, onConfirm, procesando }) {
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return createPortal(
+        <div 
+            className="fixed inset-0 bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
+            style={{ zIndex: 999999 }}
+        >
+            <div 
+                className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border border-amber-200 animate-in fade-in zoom-in duration-200"
+                style={{ zIndex: 1000000 }}
+            >
+                <div className="flex items-center justify-center mb-6">
+                    <div className="flex-shrink-0 w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center">
+                        <PauseIcon className="w-8 h-8 text-amber-600" />
+                    </div>
+                </div>
+                
+                <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                        ¿Desactivar Producto?
+                    </h3>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                        <p className="text-sm text-gray-700 mb-2">
+                            <strong>Producto:</strong> {producto?.nombre}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                            El producto será desactivado y no estará disponible para los clientes, pero podrás reactivarlo cuando quieras.
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="flex space-x-3">
+                    <button
+                        onClick={onClose}
+                        disabled={procesando}
+                        className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={procesando}
+                        className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center"
+                    >
+                        {procesando ? (
+                            <div className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Desactivando...
+                            </div>
+                        ) : (
+                            'Desactivar'
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
 export default function Index() {
+    // Hook de notificaciones
+    const { notification, showNotification, hideNotification } = useNotification();
+    
     // Estados del DataTable
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -122,6 +204,7 @@ export default function Index() {
     // Estados para acciones
     const [procesando, setProcesando] = useState(null);
     const [modalEliminar, setModalEliminar] = useState({ abierto: false, producto: null });
+    const [modalDesactivar, setModalDesactivar] = useState({ abierto: false, producto: null });
 
     // Cargar estadísticas
     const loadStats = async () => {
@@ -214,18 +297,43 @@ export default function Index() {
         setModalEliminar({ abierto: true, producto });
     };
 
+    const confirmarDesactivar = (producto) => {
+        setModalDesactivar({ abierto: true, producto });
+    };
+
+    const desactivarProducto = async () => {
+        if (!modalDesactivar.producto) return;
+
+        setProcesando(modalDesactivar.producto.id);
+
+        try {
+            await router.patch(route('admin.productos.deactivate', modalDesactivar.producto.id));
+            await cargarDT();
+            await loadStats();
+            showNotification('Producto desactivado correctamente', 'success');
+        } catch (error) {
+            console.error('Error al desactivar producto:', error);
+            showNotification('Error al desactivar el producto', 'error');
+        } finally {
+            setProcesando(null);
+            setModalDesactivar({ abierto: false, producto: null });
+        }
+    };
+
     const eliminarProducto = async () => {
         if (!modalEliminar.producto) return;
 
         setProcesando(modalEliminar.producto.id);
 
         try {
-            await router.delete(route('admin.productos.destroy', modalEliminar.producto.id));
+            await router.delete(route('admin.productos.delete', modalEliminar.producto.id));
             // Recargar datos después de eliminar
             await cargarDT();
             await loadStats();
+            showNotification('Producto eliminado correctamente', 'success');
         } catch (error) {
             console.error('Error al eliminar producto:', error);
+            showNotification('Error al eliminar el producto', 'error');
         } finally {
             setProcesando(null);
             setModalEliminar({ abierto: false, producto: null });
@@ -240,8 +348,11 @@ export default function Index() {
             // Recargar datos después de cambiar estado
             await cargarDT();
             await loadStats();
+            const mensaje = producto.estado === 'activo' ? 'Producto desactivado correctamente' : 'Producto activado correctamente';
+            showNotification(mensaje, 'success');
         } catch (error) {
             console.error('Error al cambiar estado del producto:', error);
+            showNotification('Error al cambiar el estado del producto', 'error');
         } finally {
             setProcesando(null);
         }
@@ -476,7 +587,13 @@ export default function Index() {
 
                                                         {/* Toggle Estado */}
                                                         <button
-                                                            onClick={() => toggleEstado(producto)}
+                                                            onClick={() => {
+                                                                if (producto.estado === 'activo') {
+                                                                    confirmarDesactivar(producto);
+                                                                } else {
+                                                                    toggleEstado(producto);
+                                                                }
+                                                            }}
                                                             disabled={procesando === producto.id}
                                                             className={`p-1 rounded transition-colors ${
                                                                 producto.estado === 'activo' 
@@ -579,6 +696,24 @@ export default function Index() {
                 onConfirm={eliminarProducto}
                 procesando={procesando === modalEliminar.producto?.id}
             />
+
+            {/* Modal de confirmación de desactivación */}
+            <ModalDesactivar
+                isOpen={modalDesactivar.abierto}
+                producto={modalDesactivar.producto}
+                onClose={() => setModalDesactivar({ abierto: false, producto: null })}
+                onConfirm={desactivarProducto}
+                procesando={procesando === modalDesactivar.producto?.id}
+            />
+
+            {/* Toast de notificaciones */}
+            {notification && (
+                <Toast
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={hideNotification}
+                />
+            )}
         </AuthenticatedLayout>
     );
 }

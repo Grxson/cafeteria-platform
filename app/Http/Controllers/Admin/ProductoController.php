@@ -78,12 +78,14 @@ class ProductoController extends Controller
                 ->take($length)
                 ->get()
                 ->map(function ($producto) {
+                    $valorInventario = (float)$producto->precio * (int)$producto->stock;
                     return [
                         'id' => $producto->id,
                         'nombre' => $producto->nombre,
                         'descripcion' => $producto->descripcion,
                         'precio' => number_format((float)$producto->precio, 2),
-                        'stock' => $producto->stock,
+                        'stock' => number_format($producto->stock),
+                        'valor_inventario' => number_format($valorInventario, 2),
                         'estado' => $producto->estado,
                         'categoria' => $producto->categoriaProducto->nombre ?? 'Sin categoría',
                         'imagen_principal' => $producto->imagen_principal,
@@ -254,7 +256,14 @@ class ProductoController extends Controller
                 'nombre' => $producto->nombre
             ]);
 
-            return redirect()->route('admin.productos.index')->with('success', 'Producto creado exitosamente.');
+            return redirect()->route('admin.productos.index')->with([
+                'success' => 'Producto creado exitosamente.',
+                'notification' => [
+                    'type' => 'success',
+                    'message' => 'El producto "' . $producto->nombre . '" ha sido creado correctamente.',
+                    'duration' => 5000
+                ]
+            ]);
             
         } catch (\Exception $e) {
             \Log::error('Error creating producto', [
@@ -415,7 +424,14 @@ class ProductoController extends Controller
 
             return redirect()
                 ->route('admin.productos.index')
-                ->with('success', 'Producto actualizado exitosamente.');
+                ->with([
+                    'success' => 'Producto actualizado exitosamente.',
+                    'notification' => [
+                        'type' => 'success',
+                        'message' => 'El producto "' . $producto->nombre . '" ha sido actualizado correctamente.',
+                        'duration' => 5000
+                    ]
+                ]);
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -448,10 +464,35 @@ class ProductoController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Deactivate the specified resource.
+     * Method for frontend confirmation modals.
+     */
+    public function deactivate(Producto $producto)
+    {
+        try {
+            if ($producto->estado === 'inactivo') {
+                return redirect()
+                    ->back()
+                    ->withErrors(['error' => 'El producto ya está desactivado.']);
+            }
+
+            $producto->update(['estado' => 'inactivo']);
+            
+            return redirect()
+                ->back()
+                ->with('success', 'Producto desactivado exitosamente.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Error al desactivar el producto.']);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage (soft delete).
      * Only allows deletion if product is inactive.
      */
-    public function destroy(Producto $producto)
+    public function delete(Producto $producto)
     {
         try {
             // Solo permitir eliminación si el producto está inactivo
@@ -462,7 +503,7 @@ class ProductoController extends Controller
             }
 
             // Eliminar archivos físicamente del storage antes del soft delete
-            $this->eliminarArchivosProducto($producto);
+            $this->destroyFiles($producto);
 
             // Soft delete: cambiar estado a 'eliminado' en lugar de eliminar físicamente
             $producto->update(['estado' => 'eliminado']);
@@ -478,9 +519,9 @@ class ProductoController extends Controller
     }
 
     /**
-     * Eliminar archivos de imagen y video del producto del storage
+     * Destroy/Remove files associated with the product from storage
      */
-    private function eliminarArchivosProducto(Producto $producto)
+    private function destroyFiles(Producto $producto)
     {
         try {
             // Eliminar imagen principal
