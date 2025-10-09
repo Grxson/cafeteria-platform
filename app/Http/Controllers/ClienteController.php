@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreClienteRequest;
 use App\Models\User;
+use App\Helpers\NumberHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -127,7 +128,7 @@ class ClienteController extends Controller
         // Cargar las relaciones necesarias
         $producto->load(['categoriaProducto', 'comentarios.user']);
         
-        // Obtener estadísticas de comentarios
+        // Obtener estadísticas de comentarios (incluir comentarios libres y de pedidos)
         $comentariosActivos = $producto->comentarios()->where('estado', 'activo');
         $totalComentarios = $comentariosActivos->count();
         $promedioCalificacion = $totalComentarios > 0 ? $comentariosActivos->avg('calificacion') : 0;
@@ -160,6 +161,7 @@ class ClienteController extends Controller
             'estadisticasComentarios' => [
                 'total_comentarios' => $totalComentarios,
                 'promedio_calificacion' => round($promedioCalificacion, 1),
+                'promedio_calificacion_exacto' => $promedioCalificacion, // Para las medias estrellas
                 'distribucion_calificaciones' => $distribucionCalificaciones
             ],
             'puedeComentarInfo' => $puedeComentarInfo
@@ -201,5 +203,46 @@ class ClienteController extends Controller
             'puede_comentar' => count($pedidosDisponibles) > 0,
             'pedidos_disponibles' => $pedidosDisponibles
         ];
+    }
+
+    /**
+     * Show client orders.
+     */
+    public function pedidos()
+    {
+        $cliente = Auth::user();
+        
+        $pedidos = \App\Models\Pedido::with(['detalles.producto'])
+            ->where('user_id', $cliente->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($pedido) {
+                return [
+                    'id' => $pedido->id,
+                    'total' => $pedido->total,
+                    'total_formatted' => NumberHelper::formatCurrency($pedido->total),
+                    'estado' => $pedido->estado,
+                    'fecha' => $pedido->created_at->format('d/m/Y H:i'),
+                    'id_transaccion_pago' => $pedido->id_transaccion_pago,
+                    'direccion_envio' => $pedido->direccion_envio,
+                    'productos' => $pedido->detalles->map(function ($detalle) {
+                        $subtotal = $detalle->cantidad * $detalle->precio_unitario;
+                        return [
+                            'nombre' => $detalle->producto->nombre,
+                            'cantidad' => $detalle->cantidad,
+                            'precio_unitario' => $detalle->precio_unitario,
+                            'precio_unitario_formatted' => NumberHelper::formatCurrency($detalle->precio_unitario),
+                            'subtotal' => $subtotal,
+                            'subtotal_formatted' => NumberHelper::formatCurrency($subtotal),
+                        ];
+                    })
+                ];
+            });
+        
+        return Inertia::render('Clientes/Pedidos', [
+            'cliente' => $cliente,
+            'pedidos' => $pedidos,
+            'invoice_sent' => session('invoice_sent')
+        ]);
     }
 }

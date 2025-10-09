@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ProductoController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComentarioController;
 use App\Http\Controllers\CarritoController;
+use App\Http\Controllers\StripeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -29,21 +30,41 @@ Route::middleware(['auth', 'verified', 'client'])->prefix('cliente')->name('clie
     Route::get('/dashboard', [ClienteController::class, 'dashboard'])->name('dashboard');
     Route::get('/tienda', [ClienteController::class, 'tienda'])->name('tienda');
     Route::get('/producto/{producto}', [ClienteController::class, 'mostrarProducto'])->name('producto.show');
+    Route::get('/pedidos', [ClienteController::class, 'pedidos'])->name('pedidos');
 
     // Rutas para comentarios y calificaciones
     Route::post('/comentarios', [ComentarioController::class, 'store'])->name('comentarios.store');
+    Route::post('/comentarios/libre', [ComentarioController::class, 'storeLibre'])->name('comentarios.store.libre');
+    Route::put('/comentarios/{comentario}', [ComentarioController::class, 'update'])->name('comentarios.update');
+    Route::delete('/comentarios/{comentario}', [ComentarioController::class, 'destroy'])->name('comentarios.delete');
     Route::get('/producto/{producto}/comentarios', [ComentarioController::class, 'getComentarios'])->name('comentarios.get');
     Route::get('/producto/{producto}/estadisticas', [ComentarioController::class, 'getEstadisticas'])->name('comentarios.estadisticas');
     Route::get('/producto/{producto}/puede-comentar', [ComentarioController::class, 'puedeComentarProducto'])->name('comentarios.puede-comentar');
 
     // Rutas para carrito de compras
     Route::get('/carrito', [CarritoController::class, 'index'])->name('carrito');
+    Route::get('/carrito/checkout-preview', [CarritoController::class, 'checkoutPreview'])->name('carrito.checkout-preview');
     Route::post('/carrito/agregar', [CarritoController::class, 'agregar'])->name('carrito.agregar');
     Route::put('/carrito/actualizar/{carritoProducto}', [CarritoController::class, 'actualizar'])->name('carrito.actualizar');
     Route::delete('/carrito/quitar/{carritoProducto}', [CarritoController::class, 'quitar'])->name('carrito.quitar');
     Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar'])->name('carrito.vaciar');
     Route::get('/carrito/count', [CarritoController::class, 'count'])->name('carrito.count');
+    
+    // Ruta para compra directa
+    Route::post('/comprar-directo', [CarritoController::class, 'comprarDirecto'])->name('comprar.directo');
+    Route::get('/producto/{producto}/checkout-preview', [CarritoController::class, 'productoCheckoutPreview'])->name('producto.checkout-preview');
+    
+    // Rutas para Stripe
+    Route::post('/stripe/checkout-session', [StripeController::class, 'createCheckoutSession'])->name('stripe.checkout');
+    Route::post('/stripe/checkout-session-direct', [StripeController::class, 'createDirectCheckoutSession'])->name('stripe.checkout.direct');
+    
+    // Rutas para facturas
+    Route::get('/factura/{pedido}/descargar', [App\Http\Controllers\InvoiceController::class, 'downloadPDF'])->name('factura.download');
+    Route::get('/factura/{pedido}/ver', [App\Http\Controllers\InvoiceController::class, 'viewPDF'])->name('factura.view');
 });
+
+// Ruta de éxito de Stripe (fuera del grupo para acceso público)
+Route::get('/stripe/success', [App\Http\Controllers\StripeController::class, 'handleSuccess'])->name('stripe.success');
 
 // Rutas para administradores
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {

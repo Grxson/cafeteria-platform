@@ -216,7 +216,7 @@ export default function IndexProductos({ productos }) {
                                                             </p>
                                                             <div className="flex items-center space-x-3">
                                                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
-                                                                    {producto.categoria_producto?.nombre || 'Sin categoría'}
+                                                                    {producto.categoriaProducto?.nombre || 'Sin categoría'}
                                                                 </span>
                                                             </div>
                                                         </div>

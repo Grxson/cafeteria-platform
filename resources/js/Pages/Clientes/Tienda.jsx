@@ -149,7 +149,7 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
                     </div>
 
                     {/* Grid de Productos */}
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 sm:gap-4 md:gap-6">
                         {productosFiltrados.map((producto) => (
                             <div
                                 key={producto.id}
@@ -195,7 +195,7 @@ export default function ClienteTienda({ cliente, productos, categorias }) {
                                         {/* Badge de categoría */}
                                         <div className="absolute top-3 left-3 z-20">
                                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-500/90 text-white backdrop-blur-sm">
-                                                {producto.categoria_producto?.nombre}
+                                                {producto.categoriaProducto?.nombre}
                                             </span>
                                         </div>
 

@@ -137,7 +137,7 @@ export default function ShowProducto({ producto }) {
                                         <span className="text-sm font-medium text-purple-800">Categoría</span>
                                     </div>
                                     <p className="text-lg font-semibold text-purple-900">
-                                        {producto.categoria_producto?.nombre || 'Sin categoría'}
+                                        {producto.categoriaProducto?.nombre || 'Sin categoría'}
                                     </p>
                                 </div>
 

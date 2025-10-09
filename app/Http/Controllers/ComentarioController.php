@@ -182,4 +182,143 @@ class ComentarioController extends Controller
             'pedidos_disponibles' => $pedidosDisponibles
         ]);
     }
+
+    /**
+     * Store a comment without requiring a purchase (libre).
+     */
+    public function storeLibre(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'producto_id' => 'required|exists:productos,id',
+            'calificacion' => 'required|integer|min:1|max:5',
+            'comentario' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = Auth::user();
+        
+        // Verificar que no exista ya un comentario libre para este producto/usuario
+        $existeComentario = ComentarioCalificacion::where([
+            'user_id' => $user->id,
+            'producto_id' => $request->producto_id,
+            'pedido_id' => null, // Comentarios libres no tienen pedido_id
+        ])->exists();
+
+        if ($existeComentario) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya has comentado este producto anteriormente.'
+            ], 409);
+        }
+
+        try {
+            $comentario = ComentarioCalificacion::create([
+                'user_id' => $user->id,
+                'producto_id' => $request->producto_id,
+                'pedido_id' => null, // Comentarios libres no requieren pedido
+                'calificacion' => $request->calificacion,
+                'comentario' => $request->comentario,
+                'estado' => 'activo',
+            ]);
+
+            // Cargar las relaciones para la respuesta
+            $comentario->load('user');
+
+            return response()->json([
+                'success' => true,
+                'message' => '¡Gracias por tu comentario! Ha sido publicado exitosamente.',
+                'comentario' => $comentario
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar el comentario: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a comment (only by the owner).
+     */
+    public function update(Request $request, ComentarioCalificacion $comentario)
+    {
+        $user = Auth::user();
+        
+        // Verificar que el usuario sea el propietario del comentario
+        if ($comentario->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para editar este comentario.'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'calificacion' => 'required|integer|min:1|max:5',
+            'comentario' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $comentario->update([
+                'calificacion' => $request->calificacion,
+                'comentario' => $request->comentario,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comentario actualizado exitosamente.',
+                'comentario' => $comentario
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el comentario: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a comment (only by the owner).
+     */
+    public function destroy(ComentarioCalificacion $comentario)
+    {
+        $user = Auth::user();
+        
+        // Verificar que el usuario sea el propietario del comentario
+        if ($comentario->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para eliminar este comentario.'
+            ], 403);
+        }
+
+        try {
+            $comentario->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comentario eliminado exitosamente.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el comentario: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

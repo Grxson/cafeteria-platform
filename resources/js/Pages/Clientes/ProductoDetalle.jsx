@@ -13,7 +13,7 @@ import { getAvatarUrl, getImagenUrl } from '@/Utils/avatarUtils';
 export default function ProductoDetalle({ cliente, producto, productosRelacionados, estadisticasComentarios, puedeComentarInfo }) {
     const [cantidad, setCantidad] = useState(1);
     const [imagenSeleccionada, setImagenSeleccionada] = useState(
-        producto.imagen_principal ?                                                                         getImagenUrl(producto.imagen_principal) : null
+        producto.imagen_principal ?getImagenUrl(producto.imagen_principal) : null
     );
     const [mostrarFormularioComentario, setMostrarFormularioComentario] = useState(false);
     const [notificacion, setNotificacion] = useState(null);
@@ -25,6 +25,9 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
     const [comentarios, setComentarios] = useState(producto.comentarios || []);
     const [enviandoComentario, setEnviandoComentario] = useState(false);
     const [agregandoCarrito, setAgregandoCarrito] = useState(false);
+    const [comprandoDirecto, setComprandoDirecto] = useState(false);
+    const [editandoComentario, setEditandoComentario] = useState(null);
+    const [comentarioEditado, setComentarioEditado] = useState({ calificacion: 5, comentario: '' });
 
     const incrementarCantidad = () => {
         if (cantidad < producto.stock) {
@@ -112,16 +115,40 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
         }
     };
 
+    const comprarDirecto = () => {
+        if (cantidad > producto.stock) {
+            setNotificacion({
+                mensaje: 'No hay suficiente stock disponible',
+                tipo: 'error'
+            });
+            setTimeout(() => setNotificacion(null), 5000);
+            return;
+        }
+
+        // Redirigir al preview de compra directa con los datos del producto
+        router.visit(route('clientes.producto.checkout-preview', producto.id), {
+            method: 'get',
+            data: {
+                cantidad: cantidad,
+                tipo: 'directo'
+            }
+        });
+    };
+
     const enviarComentario = async () => {
-        if (!nuevoComentario.pedido_id || !nuevoComentario.calificacion) {
-            alert('Por favor, selecciona un pedido y una calificación.');
+        if (!nuevoComentario.calificacion) {
+            setNotificacion({
+                mensaje: 'Por favor, selecciona una calificación.',
+                tipo: 'error'
+            });
+            setTimeout(() => setNotificacion(null), 5000);
             return;
         }
 
         setEnviandoComentario(true);
 
         try {
-            const response = await fetch(route('clientes.comentarios.store'), {
+            const response = await fetch(route('clientes.comentarios.store.libre'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -129,7 +156,6 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                 },
                 body: JSON.stringify({
                     producto_id: producto.id,
-                    pedido_id: nuevoComentario.pedido_id,
                     calificacion: nuevoComentario.calificacion,
                     comentario: nuevoComentario.comentario,
                 }),
@@ -151,28 +177,166 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                 // Ocultar el formulario
                 setMostrarFormularioComentario(false);
 
-                alert('¡Gracias por tu comentario! Ha sido publicado exitosamente.');
+                setNotificacion({
+                    mensaje: '¡Gracias por tu comentario! Ha sido publicado exitosamente.',
+                    tipo: 'exito'
+                });
+                setTimeout(() => setNotificacion(null), 5000);
             } else {
-                alert(data.message || 'Error al enviar el comentario.');
+                setNotificacion({
+                    mensaje: data.message || 'Error al enviar el comentario.',
+                    tipo: 'error'
+                });
+                setTimeout(() => setNotificacion(null), 5000);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al enviar el comentario. Por favor, inténtalo de nuevo.');
+            setNotificacion({
+                mensaje: 'Error al enviar el comentario. Por favor, inténtalo de nuevo.',
+                tipo: 'error'
+            });
+            setTimeout(() => setNotificacion(null), 5000);
         } finally {
             setEnviandoComentario(false);
         }
     };
 
+    const eliminarComentario = async (comentarioId) => {
+        if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(route('clientes.comentarios.delete', comentarioId), {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Eliminar el comentario de la lista
+                setComentarios(comentarios.filter(c => c.id !== comentarioId));
+                
+                setNotificacion({
+                    mensaje: 'Comentario eliminado exitosamente.',
+                    tipo: 'exito'
+                });
+                setTimeout(() => setNotificacion(null), 5000);
+            } else {
+                setNotificacion({
+                    mensaje: data.message || 'Error al eliminar el comentario.',
+                    tipo: 'error'
+                });
+                setTimeout(() => setNotificacion(null), 5000);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            setNotificacion({
+                mensaje: 'Error al conectar con el servidor.',
+                tipo: 'error'
+            });
+            setTimeout(() => setNotificacion(null), 5000);
+        }
+    };
+
+    const iniciarEdicionComentario = (comentario) => {
+        setEditandoComentario(comentario.id);
+        setComentarioEditado({
+            calificacion: comentario.calificacion,
+            comentario: comentario.comentario || ''
+        });
+    };
+
+    const cancelarEdicion = () => {
+        setEditandoComentario(null);
+        setComentarioEditado({ calificacion: 5, comentario: '' });
+    };
+
+    const guardarEdicionComentario = async (comentarioId) => {
+        try {
+            const response = await fetch(route('clientes.comentarios.update', comentarioId), {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                },
+                body: JSON.stringify({
+                    calificacion: comentarioEditado.calificacion,
+                    comentario: comentarioEditado.comentario,
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Actualizar el comentario en la lista
+                setComentarios(comentarios.map(c => 
+                    c.id === comentarioId 
+                        ? { ...c, calificacion: comentarioEditado.calificacion, comentario: comentarioEditado.comentario }
+                        : c
+                ));
+                
+                setEditandoComentario(null);
+                setComentarioEditado({ calificacion: 5, comentario: '' });
+                
+                setNotificacion({
+                    mensaje: 'Comentario actualizado exitosamente.',
+                    tipo: 'exito'
+                });
+                setTimeout(() => setNotificacion(null), 5000);
+            } else {
+                setNotificacion({
+                    mensaje: data.message || 'Error al actualizar el comentario.',
+                    tipo: 'error'
+                });
+                setTimeout(() => setNotificacion(null), 5000);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            setNotificacion({
+                mensaje: 'Error al conectar con el servidor.',
+                tipo: 'error'
+            });
+            setTimeout(() => setNotificacion(null), 5000);
+        }
+    };
+
     const renderizarEstrellas = (calificacion, size = 'w-5 h-5') => {
-        return [1, 2, 3, 4, 5].map((star) => (
-            <svg
-                key={star}
-                className={`${size} ${star <= calificacion ? 'text-amber-400' : 'text-gray-300'} fill-current`}
-                viewBox="0 0 20 20"
-            >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-        ));
+        return [1, 2, 3, 4, 5].map((star) => {
+            const filled = calificacion >= star;
+            const halfFilled = calificacion >= star - 0.5 && calificacion < star;
+            
+            return (
+                <div key={star} className={`${size} relative inline-block`}>
+                    {/* Estrella de fondo (gris) */}
+                    <svg
+                        className={`${size} text-gray-300 fill-current absolute`}
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    
+                    {/* Estrella dorada (completa o media) */}
+                    <svg
+                        className={`${size} text-amber-400 fill-current relative`}
+                        viewBox="0 0 20 20"
+                        style={{
+                            clipPath: filled 
+                                ? 'none' 
+                                : halfFilled 
+                                    ? 'inset(0 50% 0 0)' 
+                                    : 'inset(0 100% 0 0)'
+                        }}
+                    >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                </div>
+            );
+        });
     };
 
     return (
@@ -253,13 +417,21 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                                 <div>
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                                         <span className="inline-block px-3 py-1 text-xs sm:text-sm rounded-full bg-amber-100 text-amber-800 w-fit">
-                                            {producto.categoria_producto?.nombre}
+                                            {producto.categoriaProducto?.nombre}
                                         </span>
                                         <div className="flex items-center">
-                                            {renderizarEstrellas(Math.round(estadisticasComentarios.promedio_calificacion), 'w-4 h-4 sm:w-5 sm:h-5')}
-                                            <span className="ml-2 text-xs sm:text-sm text-gray-600">
-                                                ({estadisticasComentarios.total_comentarios} {estadisticasComentarios.total_comentarios === 1 ? 'reseña' : 'reseñas'})
-                                            </span>
+                                            {estadisticasComentarios.total_comentarios > 0 ? (
+                                                <>
+                                                    {renderizarEstrellas(estadisticasComentarios.promedio_calificacion_exacto || estadisticasComentarios.promedio_calificacion, 'w-4 h-4 sm:w-5 sm:h-5')}
+                                                    <span className="ml-2 text-xs sm:text-sm text-gray-600">
+                                                        {estadisticasComentarios.promedio_calificacion}/5 ({estadisticasComentarios.total_comentarios} {estadisticasComentarios.total_comentarios === 1 ? 'reseña' : 'reseñas'})
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs sm:text-sm text-gray-500">
+                                                    Sin calificaciones aún
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">{producto.nombre}</h1>
@@ -301,27 +473,51 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={agregarAlCarrito}
-                                        disabled={agregandoCarrito || producto.stock === 0}
-                                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center disabled:cursor-not-allowed disabled:transform-none"
-                                    >
-                                        {agregandoCarrito ? (
-                                            <>
-                                                <svg className="w-6 h-6 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                                </svg>
-                                                Agregando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13l2.5 5m0 0h8M7 13h10M4 7h16"></path>
-                                                </svg>
-                                                {producto.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
-                                            </>
-                                        )}
-                                    </button>
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={agregarAlCarrito}
+                                            disabled={agregandoCarrito || producto.stock === 0}
+                                            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center disabled:cursor-not-allowed disabled:transform-none"
+                                        >
+                                            {agregandoCarrito ? (
+                                                <>
+                                                    <svg className="w-6 h-6 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                    </svg>
+                                                    Agregando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13l2.5 5m0 0h8M7 13h10M4 7h16"></path>
+                                                    </svg>
+                                                    {producto.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <button
+                                            onClick={comprarDirecto}
+                                            disabled={comprandoDirecto || producto.stock === 0}
+                                            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center disabled:cursor-not-allowed disabled:transform-none"
+                                        >
+                                            {comprandoDirecto ? (
+                                                <>
+                                                    <svg className="w-6 h-6 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                    </svg>
+                                                    Comprando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                                    </svg>
+                                                    {producto.stock === 0 ? 'Sin Stock' : 'Comprar Ahora'}
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -357,100 +553,93 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                     <div className="p-4 sm:p-8 mb-8 bg-white border shadow-xl rounded-2xl border-amber-200">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                             <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Reseñas y Comentarios</h3>
-                            {puedeComentarInfo.puede_comentar && (
-                                <button
-                                    onClick={() => setMostrarFormularioComentario(!mostrarFormularioComentario)}
-                                    className="px-4 py-2 font-semibold text-white transition-all duration-300 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-sm sm:text-base"
-                                >
-                                    {mostrarFormularioComentario ? 'Cancelar' : 'Escribir Reseña'}
-                                </button>
-                            )}
+                            <button
+                                onClick={() => setMostrarFormularioComentario(!mostrarFormularioComentario)}
+                                className="px-4 py-2 font-semibold text-white transition-all duration-300 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-sm sm:text-base"
+                            >
+                                {mostrarFormularioComentario ? 'Cancelar' : 'Escribir Reseña'}
+                            </button>
                         </div>
 
                         {/* Estadísticas de calificaciones */}
-                        {estadisticasComentarios.total_comentarios > 0 && (
-                            <div className="p-4 sm:p-6 mb-6 border rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-                                <div className="grid gap-6 md:grid-cols-2">
-                                    <div className="text-center">
-                                        <div className="mb-2 text-3xl sm:text-4xl font-bold text-amber-600">
-                                            {estadisticasComentarios.promedio_calificacion}
-                                        </div>
-                                        <div className="flex justify-center mb-2">
-                                            {renderizarEstrellas(Math.round(estadisticasComentarios.promedio_calificacion), 'w-5 h-5 sm:w-6 sm:h-6')}
-                                        </div>
-                                        <p className="text-gray-600 text-sm sm:text-base">
-                                            Basado en {estadisticasComentarios.total_comentarios} {estadisticasComentarios.total_comentarios === 1 ? 'reseña' : 'reseñas'}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {[5, 4, 3, 2, 1].map((estrellas) => (
-                                            <div key={estrellas} className="flex items-center">
-                                                <span className="w-3 text-sm font-medium text-gray-700">{estrellas}</span>
-                                                <svg className="w-4 h-4 mx-1 fill-current text-amber-400" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                </svg>
-                                                <div className="flex-1 mx-2">
-                                                    <div className="h-2 bg-gray-200 rounded-full">
-                                                        <div
-                                                            className="h-2 transition-all duration-300 rounded-full bg-amber-400"
-                                                            style={{ width: `${estadisticasComentarios.distribucion_calificaciones[estrellas]?.percentage || 0}%` }}
-                                                        ></div>
-                                                    </div>
-                                                </div>
-                                                <span className="w-8 text-sm text-gray-600">
-                                                    {estadisticasComentarios.distribucion_calificaciones[estrellas]?.count || 0}
-                                                </span>
+                        <div className="p-4 sm:p-6 mb-6 border rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+                            <div className="grid gap-6 md:grid-cols-2">
+                                <div className="text-center">
+                                    {estadisticasComentarios.total_comentarios > 0 ? (
+                                        <>
+                                            <div className="mb-2 text-3xl sm:text-4xl font-bold text-amber-600">
+                                                {estadisticasComentarios.promedio_calificacion}
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="flex justify-center mb-2">
+                                                {renderizarEstrellas(estadisticasComentarios.promedio_calificacion_exacto || estadisticasComentarios.promedio_calificacion, 'w-5 h-5 sm:w-6 sm:h-6')}
+                                            </div>
+                                            <p className="text-gray-600 text-sm sm:text-base">
+                                                Basado en {estadisticasComentarios.total_comentarios} {estadisticasComentarios.total_comentarios === 1 ? 'reseña' : 'reseñas'}
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="mb-2 text-3xl sm:text-4xl font-bold text-gray-400">
+                                                0.0
+                                            </div>
+                                            <div className="flex justify-center mb-2">
+                                                {renderizarEstrellas(0, 'w-5 h-5 sm:w-6 sm:h-6')}
+                                            </div>
+                                            <p className="text-gray-500 text-sm sm:text-base">
+                                                Sin calificaciones aún
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-medium text-gray-700 mb-3">Distribución de calificaciones</h4>
+                                    {[5, 4, 3, 2, 1].map((estrellas) => (
+                                        <div key={estrellas} className="flex items-center">
+                                            <span className="w-3 text-sm font-medium text-gray-700">{estrellas}</span>
+                                            <svg className="w-4 h-4 mx-1 fill-current text-amber-400" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                            <div className="flex-1 mx-2">
+                                                <div className="h-2 bg-gray-200 rounded-full">
+                                                    <div
+                                                        className="h-2 transition-all duration-300 rounded-full bg-amber-400"
+                                                        style={{ width: `${estadisticasComentarios.distribucion_calificaciones[estrellas]?.percentage || 0}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                            <span className="w-8 text-sm text-gray-600 text-right">
+                                                {estadisticasComentarios.distribucion_calificaciones[estrellas]?.count || 0}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        )}
+                        </div>
 
                         {/* Formulario para agregar comentario */}
                         {mostrarFormularioComentario && (
                             <div className="p-6 mb-6 border border-gray-200 rounded-lg bg-gray-50">
                                 <h4 className="mb-4 text-lg font-semibold text-gray-900">Escribe tu reseña</h4>
 
-                                <div className="grid gap-4 mb-4 md:grid-cols-2">
-                                    <div>
-                                        <label className="block mb-2 text-sm font-medium text-gray-700">
-                                            Selecciona el pedido
-                                        </label>
-                                        <select
-                                            value={nuevoComentario.pedido_id}
-                                            onChange={(e) => setNuevoComentario({ ...nuevoComentario, pedido_id: e.target.value })}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                        >
-                                            <option value="">-- Selecciona un pedido --</option>
-                                            {puedeComentarInfo.pedidos_disponibles.map((pedido) => (
-                                                <option key={pedido.id} value={pedido.id}>
-                                                    Pedido #{pedido.id} - {pedido.fecha} (${pedido.total})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block mb-2 text-sm font-medium text-gray-700">
-                                            Calificación
-                                        </label>
-                                        <div className="flex items-center space-x-1">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <button
-                                                    key={star}
-                                                    onClick={() => setNuevoComentario({ ...nuevoComentario, calificacion: star })}
-                                                    className="focus:outline-none"
+                                <div className="mb-4">
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Calificación
+                                    </label>
+                                    <div className="flex items-center space-x-1">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                onClick={() => setNuevoComentario({ ...nuevoComentario, calificacion: star })}
+                                                className="focus:outline-none"
+                                            >
+                                                <svg
+                                                    className={`w-8 h-8 ${star <= nuevoComentario.calificacion ? 'text-amber-400' : 'text-gray-300'} fill-current hover:text-amber-400 transition-colors`}
+                                                    viewBox="0 0 20 20"
                                                 >
-                                                    <svg
-                                                        className={`w-8 h-8 ${star <= nuevoComentario.calificacion ? 'text-amber-400' : 'text-gray-300'} fill-current hover:text-amber-400 transition-colors`}
-                                                        viewBox="0 0 20 20"
-                                                    >
-                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                    </svg>
-                                                </button>
-                                            ))}
-                                        </div>
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                </svg>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
@@ -474,7 +663,7 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                                 <div className="flex space-x-3">
                                     <button
                                         onClick={enviarComentario}
-                                        disabled={enviandoComentario || !nuevoComentario.pedido_id}
+                                        disabled={enviandoComentario || !nuevoComentario.calificacion}
                                         className="px-6 py-3 font-semibold text-white transition-all duration-300 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {enviandoComentario ? 'Enviando...' : 'Publicar Reseña'}
@@ -494,41 +683,123 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                             <div className="space-y-4">
                                 {comentarios.map((comentario) => (
                                     <div key={comentario.id} className="pb-4 border-b border-gray-200 last:border-b-0">
-                                        <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0">
-                                                {comentario.user?.avatar_url ? (
-                                                    <img
-                                                        src={getAvatarUrl(comentario.user.avatar_url)}
-                                                        alt={comentario.user.name}
-                                                        className="object-cover w-10 h-10 rounded-full"
-                                                    />
-                                                ) : (
-                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500">
-                                                        <span className="text-sm font-semibold text-white">
-                                                            {comentario.user?.name?.charAt(0).toUpperCase()}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between">
-                                                    <h4 className="font-semibold text-gray-900">{comentario.user?.name}</h4>
-                                                    <div className="flex items-center">
-                                                        {renderizarEstrellas(comentario.calificacion, 'w-4 h-4')}
+                                        {editandoComentario === comentario.id ? (
+                                            /* Formulario de edición */
+                                            <div className="p-4 border border-amber-200 rounded-lg bg-amber-50">
+                                                <h5 className="mb-3 font-semibold text-gray-900">Editar comentario</h5>
+                                                
+                                                <div className="mb-4">
+                                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                                        Calificación
+                                                    </label>
+                                                    <div className="flex items-center space-x-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button
+                                                                key={star}
+                                                                onClick={() => setComentarioEditado({ ...comentarioEditado, calificacion: star })}
+                                                                className="focus:outline-none"
+                                                            >
+                                                                <svg
+                                                                    className={`w-6 h-6 ${star <= comentarioEditado.calificacion ? 'text-amber-400' : 'text-gray-300'} fill-current hover:text-amber-400 transition-colors`}
+                                                                    viewBox="0 0 20 20"
+                                                                >
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                                </svg>
+                                                            </button>
+                                                        ))}
                                                     </div>
                                                 </div>
-                                                {comentario.comentario && (
-                                                    <p className="mt-2 text-gray-700">{comentario.comentario}</p>
-                                                )}
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                    {new Date(comentario.created_at).toLocaleDateString('es-ES', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}
-                                                </p>
+
+                                                <div className="mb-4">
+                                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                                        Comentario
+                                                    </label>
+                                                    <textarea
+                                                        value={comentarioEditado.comentario}
+                                                        onChange={(e) => setComentarioEditado({ ...comentarioEditado, comentario: e.target.value })}
+                                                        placeholder="Edita tu comentario..."
+                                                        rows="3"
+                                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                                        maxLength="1000"
+                                                    />
+                                                </div>
+
+                                                <div className="flex space-x-3">
+                                                    <button
+                                                        onClick={() => guardarEdicionComentario(comentario.id)}
+                                                        className="px-4 py-2 text-white transition-colors bg-green-600 rounded-lg hover:bg-green-700"
+                                                    >
+                                                        Guardar
+                                                    </button>
+                                                    <button
+                                                        onClick={cancelarEdicion}
+                                                        className="px-4 py-2 text-gray-700 transition-colors bg-gray-300 rounded-lg hover:bg-gray-400"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            /* Vista normal del comentario */
+                                            <div className="flex items-start space-x-4">
+                                                <div className="flex-shrink-0">
+                                                    {comentario.user?.avatar_url ? (
+                                                        <img
+                                                            src={getAvatarUrl(comentario.user.avatar_url)}
+                                                            alt={comentario.user.name}
+                                                            className="object-cover w-10 h-10 rounded-full"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500">
+                                                            <span className="text-sm font-semibold text-white">
+                                                                {comentario.user?.name?.charAt(0).toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="font-semibold text-gray-900">{comentario.user?.name}</h4>
+                                                        <div className="flex items-center space-x-2">
+                                                            {renderizarEstrellas(comentario.calificacion, 'w-4 h-4')}
+                                                            {/* Botones de editar/eliminar solo para comentarios propios */}
+                                                            {comentario.user?.id === cliente?.id && (
+                                                                <div className="flex space-x-1 ml-2">
+                                                                    <button
+                                                                        onClick={() => iniciarEdicionComentario(comentario)}
+                                                                        className="p-1 text-blue-600 transition-colors hover:text-blue-800"
+                                                                        title="Editar comentario"
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                        </svg>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => eliminarComentario(comentario.id)}
+                                                                        className="p-1 text-red-600 transition-colors hover:text-red-800"
+                                                                        title="Eliminar comentario"
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {comentario.comentario && (
+                                                        <p className="mt-2 text-gray-700">{comentario.comentario}</p>
+                                                    )}
+                                                    <p className="mt-1 text-sm text-gray-500">
+                                                        {new Date(comentario.created_at).toLocaleDateString('es-ES', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

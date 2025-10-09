@@ -9,10 +9,12 @@ import {
 } from '@heroicons/react/24/outline';
 import ConfirmationModal from '@/Components/Modals/ConfirmationModal';
 import { useConfirmation } from '@/Hooks/useConfirmation';
+import { formatCurrency, formatNumber } from '@/Utils/formatUtils';
 
 export default function Carrito({ carrito }) {
     const [actualizando, setActualizando] = useState({});
     const [eliminando, setEliminando] = useState({});
+    const [procesandoPago, setProcesandoPago] = useState(false);
     const {
         modalState,
         hideModal,
@@ -102,6 +104,16 @@ export default function Carrito({ carrito }) {
             console.error('Error:', error);
             showError('Verifica tu conexión a internet e inténtalo de nuevo', 'Error de conexión');
         }
+    };
+
+    const procederAlPago = () => {
+        if (!carrito.productos || carrito.productos.length === 0) {
+            showError('Tu carrito está vacío', 'No hay productos para procesar');
+            return;
+        }
+
+        // Redirigir a la vista previa del pedido
+        router.visit(route('clientes.carrito.checkout-preview'));
     };
 
     return (
@@ -244,7 +256,7 @@ export default function Carrito({ carrito }) {
                                                             <div>
                                                                 <p className="text-sm text-gray-500">Precio unitario</p>
                                                                 <p className="text-lg font-bold sm:text-xl text-amber-700">
-                                                                    ${parseFloat(item.precio_unitario).toFixed(2)}
+                                                                    {formatCurrency(item.precio_unitario)}
                                                                 </p>
                                                             </div>
 
@@ -285,10 +297,10 @@ export default function Carrito({ carrito }) {
                                                             <div className="text-center sm:text-right">
                                                                 <p className="mb-1 text-xs text-gray-500 sm:text-sm">Subtotal</p>
                                                                 <p className="text-xl font-bold text-gray-900 sm:text-2xl">
-                                                                    ${parseFloat(item.subtotal).toFixed(2)}
+                                                                    {formatCurrency(item.subtotal)}
                                                                 </p>
                                                                 <p className="mt-1 text-xs text-gray-400">
-                                                                    {item.cantidad} x ${parseFloat(item.precio_unitario).toFixed(2)}
+                                                                    {item.cantidad} x {formatCurrency(item.precio_unitario)}
                                                                 </p>
                                                             </div>
 
@@ -356,7 +368,7 @@ export default function Carrito({ carrito }) {
                                                     <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                                                     Productos ({carrito.cantidad_productos} items)
                                                 </span>
-                                                <span className="font-semibold">${parseFloat(carrito.total).toFixed(2)}</span>
+                                                <span className="font-semibold">{formatCurrency(carrito.total)}</span>
                                             </div>
 
                                             <div className="flex items-center justify-between text-gray-700">
@@ -391,7 +403,7 @@ export default function Carrito({ carrito }) {
                                             <div className="flex items-center justify-between">
                                                 <span className="text-lg font-bold text-gray-800">Total a pagar</span>
                                                 <span className="text-2xl font-bold text-amber-700">
-                                                    ${parseFloat(carrito.total).toFixed(2)}
+                                                    {formatCurrency(carrito.total)}
                                                 </span>
                                             </div>
                                             <p className="mt-1 text-xs text-gray-500">IVA incluido</p>
@@ -400,13 +412,25 @@ export default function Carrito({ carrito }) {
                                         {/* Botones de acción */}
                                         <div className="space-y-3">
                                             <button
-                                                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                                                onClick={() => showInfo('Estamos trabajando en esta funcionalidad. ¡Próximamente podrás completar tu compra!', '¡Pronto disponible! ☕')}
+                                                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                                onClick={procederAlPago}
+                                                disabled={procesandoPago || !carrito.productos || carrito.productos.length === 0}
                                             >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                                                </svg>
-                                                Proceder al Pago
+                                                {procesandoPago ? (
+                                                    <>
+                                                        <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                        </svg>
+                                                        Procesando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                        </svg>
+                                                        Proceder al Pago
+                                                    </>
+                                                )}
                                             </button>
 
                                             <a
