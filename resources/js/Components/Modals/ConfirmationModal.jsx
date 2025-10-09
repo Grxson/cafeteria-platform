@@ -75,10 +75,10 @@ const ConfirmationModal = ({
     };
 
     return isOpen ? createPortal(
-        <div className="fixed inset-0 z-[999999] overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto">
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 bg-black transition-opacity duration-300 ${isOpen ? 'opacity-50' : 'opacity-0'
+                className={`fixed inset-0 bg-black transition-opacity duration-300 ${isOpen ? 'opacity-60' : 'opacity-0'
                     }`}
                 onClick={handleCancel}
             />
@@ -86,7 +86,7 @@ const ConfirmationModal = ({
             {/* Modal */}
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                 <div
-                    className={`inline-block overflow-hidden text-left align-bottom transition-all duration-300 transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-[999999] ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                    className={`inline-block overflow-hidden text-left align-bottom transition-all duration-300 transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-[10000] ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                         }`}
                 >
                     {/* Header con icono */}

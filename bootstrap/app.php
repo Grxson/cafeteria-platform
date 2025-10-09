@@ -19,7 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Configurar redirecciones de autenticación para Inertia
         $middleware->redirectUsersTo(function ($request) {
-            return route('dashboard');
+            // Determinar si es admin o cliente y redirigir apropiadamente
+            if ($request->user()->is_admin) {
+                return route('admin.dashboard');
+            } else {
+                return route('clientes.dashboard');
+            }
         });
 
         $middleware->redirectGuestsTo(function ($request) {

@@ -16,11 +16,11 @@ export default function InvoiceSentModal({ isOpen, onClose }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto">
             <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose}></div>
+                <div className="fixed inset-0 bg-black bg-opacity-60 transition-opacity" onClick={onClose}></div>
                 
-                <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto transform transition-all">
+                <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto transform transition-all z-[10000]">
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-gray-200">
                         <div className="flex items-center gap-3">

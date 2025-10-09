@@ -11,10 +11,13 @@ export default function UpdateProfileInformation({
     mustVerifyEmail,
     status,
     className = '',
+    showOnlyAvatar = false,
+    showOnlyForm = false,
 }) {
     const user = usePage().props.auth.user;
     const fileInputRef = useRef(null);
     const [previewImage, setPreviewImage] = useState(null);
+    const [avatarUpdated, setAvatarUpdated] = useState(false);
 
     const { data, setData, post, errors, processing, recentlySuccessful } =
         useForm({
@@ -28,8 +31,38 @@ export default function UpdateProfileInformation({
 
     const submit = (e) => {
         e.preventDefault();
+        
+        // Crear FormData para manejar archivos
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('email', data.email);
+        formData.append('telefono', data.telefono);
+        formData.append('direccion', data.direccion);
+        formData.append('_method', 'patch');
+        
+        if (data.avatar) {
+            formData.append('avatar', data.avatar);
+        }
+        
         post(route('profile.update'), {
+            data: formData,
             forceFormData: true,
+            onSuccess: () => {
+                // Limpiar preview después de éxito
+                setPreviewImage(null);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+                
+                // Mostrar mensaje específico si se actualizó el avatar
+                if (data.avatar) {
+                    setAvatarUpdated(true);
+                    setTimeout(() => setAvatarUpdated(false), 3000);
+                }
+            },
+            onError: (errors) => {
+                console.error('Errores al actualizar perfil:', errors);
+            }
         });
     };
 
@@ -60,21 +93,21 @@ export default function UpdateProfileInformation({
         return getAvatarUrl(user.avatar_url);
     };
 
-    return (
-        <section className={className}>
-            <form onSubmit={submit} className="space-y-8">
-                {/* Foto de Perfil */}
+    // Si solo se muestra el avatar
+    if (showOnlyAvatar) {
+        return (
+            <section className={className}>
                 <div className="text-center">
-                    <div className="mb-6">
+                    <div className="mb-4">
                         <div className="relative inline-block">
                             {getDisplayAvatarUrl() ? (
                                 <img
                                     src={getDisplayAvatarUrl()}
                                     alt="Avatar"
-                                    className="w-32 h-32 rounded-full object-cover border-4 border-amber-200 shadow-lg"
+                                    className="w-32 h-32 rounded-lg object-cover border-4 border-gray-200 shadow-lg"
                                 />
                             ) : (
-                                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center text-white text-4xl font-bold border-4 border-amber-200 shadow-lg">
+                                <div className="w-32 h-32 rounded-lg bg-gray-800 flex items-center justify-center text-white text-4xl font-bold border-4 border-gray-200 shadow-lg">
                                     {user.name.charAt(0).toUpperCase()}
                                 </div>
                             )}
@@ -83,7 +116,7 @@ export default function UpdateProfileInformation({
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="absolute bottom-0 right-0 bg-amber-500 hover:bg-amber-600 text-white rounded-full p-3 shadow-lg transition-colors"
+                                className="absolute bottom-0 right-0 bg-gray-800 hover:bg-gray-700 text-white rounded-full p-3 shadow-lg transition-colors"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
@@ -105,7 +138,7 @@ export default function UpdateProfileInformation({
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                         >
                             Cambiar Foto
                         </button>
@@ -114,23 +147,121 @@ export default function UpdateProfileInformation({
                             <button
                                 type="button"
                                 onClick={removeAvatar}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                             >
                                 Eliminar
                             </button>
                         )}
                     </div>
 
+                    {/* Mensaje de éxito para avatar */}
+                    <Transition
+                        show={avatarUpdated}
+                        enter="transition ease-in-out"
+                        enterFrom="opacity-0"
+                        leave="transition ease-in-out"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="mt-3 text-center">
+                            <div className="inline-flex items-center text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Foto de perfil actualizada correctamente
+                            </div>
+                        </div>
+                    </Transition>
+
                     <InputError className="mt-2 text-center" message={errors.avatar} />
                 </div>
+            </section>
+        );
+    }
+
+    return (
+        <section className={className}>
+            <form onSubmit={submit} className="space-y-6">
+                {/* Foto de Perfil - Solo si no es showOnlyForm */}
+                {!showOnlyForm && (
+                    <div className="text-center">
+                        <div className="mb-4">
+                            <div className="relative inline-block">
+                                {getDisplayAvatarUrl() ? (
+                                    <img
+                                        src={getDisplayAvatarUrl()}
+                                        alt="Avatar"
+                                        className="w-32 h-32 rounded-lg object-cover border-4 border-gray-200 shadow-lg"
+                                    />
+                                ) : (
+                                    <div className="w-32 h-32 rounded-lg bg-gray-800 flex items-center justify-center text-white text-4xl font-bold border-4 border-gray-200 shadow-lg">
+                                        {user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                                
+                                {/* Botón para cambiar avatar */}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="absolute bottom-0 right-0 bg-gray-800 hover:bg-gray-700 text-white rounded-full p-3 shadow-lg transition-colors"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                        />
+
+                        <div className="flex justify-center space-x-4">
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                Cambiar Foto
+                            </button>
+                            
+                            {(getDisplayAvatarUrl() || data.avatar) && (
+                                <button
+                                    type="button"
+                                    onClick={removeAvatar}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                    Eliminar
+                                </button>
+                            )}
+                        </div>
+
+                        <InputError className="mt-2 text-center" message={errors.avatar} />
+                    </div>
+                )}
+
+                {/* Avatar input hidden si es showOnlyForm */}
+                {showOnlyForm && (
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden"
+                    />
+                )}
 
                 {/* Información Personal */}
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid lg:grid-cols-2 gap-6">
                     <div>
                         <InputLabel htmlFor="name" value="Nombre Completo" />
                         <TextInput
                             id="name"
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-gray-800 focus:ring-gray-800"
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             required
@@ -145,7 +276,7 @@ export default function UpdateProfileInformation({
                         <TextInput
                             id="email"
                             type="email"
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-gray-800 focus:ring-gray-800"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
                             required
@@ -160,7 +291,7 @@ export default function UpdateProfileInformation({
                         <TextInput
                             id="telefono"
                             type="tel"
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-gray-800 focus:ring-gray-800"
                             value={data.telefono}
                             onChange={(e) => setData('telefono', e.target.value)}
                             autoComplete="tel"
@@ -174,7 +305,7 @@ export default function UpdateProfileInformation({
                         <InputLabel htmlFor="direccion" value="Dirección" />
                         <textarea
                             id="direccion"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                            className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-gray-800 focus:ring-gray-800"
                             rows="3"
                             value={data.direccion}
                             onChange={(e) => setData('direccion', e.target.value)}
@@ -188,21 +319,21 @@ export default function UpdateProfileInformation({
 
                 {/* Verificación de Email */}
                 {mustVerifyEmail && user.email_verified_at === null && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                         <div className="flex items-center">
-                            <svg className="w-5 h-5 text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
                             </svg>
                             <div>
-                                <p className="text-sm text-yellow-800 font-medium">
+                                <p className="text-sm text-amber-800 font-medium">
                                     Tu correo electrónico no está verificado.
                                 </p>
-                                <p className="text-sm text-yellow-700">
+                                <p className="text-sm text-amber-700">
                                     <Link
                                         href={route('verification.send')}
                                         method="post"
                                         as="button"
-                                        className="underline hover:text-yellow-900 font-medium"
+                                        className="underline hover:text-amber-900 font-medium"
                                     >
                                         Haz clic aquí para reenviar el correo de verificación.
                                     </Link>
@@ -219,10 +350,10 @@ export default function UpdateProfileInformation({
                 )}
 
                 {/* Botones de Acción */}
-                <div className="flex items-center gap-4 pt-4 border-t border-amber-200">
+                <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
                     <PrimaryButton 
                         disabled={processing}
-                        className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                        className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                     >
                         {processing ? (
                             <>

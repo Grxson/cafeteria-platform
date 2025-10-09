@@ -35,14 +35,28 @@ class ProfileController extends Controller
 
         // Manejar la subida del avatar
         if ($request->hasFile('avatar')) {
-            // Eliminar el avatar anterior si existe
-            if ($user->avatar_url && Storage::disk('public')->exists($user->avatar_url)) {
-                Storage::disk('public')->delete($user->avatar_url);
-            }
+            try {
+                // Eliminar el avatar anterior si existe
+                if ($user->avatar_url && Storage::disk('public')->exists($user->avatar_url)) {
+                    Storage::disk('public')->delete($user->avatar_url);
+                }
 
-            // Subir el nuevo avatar
-            $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            $data['avatar_url'] = $avatarPath;
+                // Subir el nuevo avatar
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+                $data['avatar_url'] = $avatarPath;
+                
+                \Log::info('Avatar subido correctamente', [
+                    'user_id' => $user->id,
+                    'avatar_path' => $avatarPath
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Error al subir avatar', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
+                
+                return Redirect::route('profile.edit')->with('error', 'Error al subir la foto de perfil.');
+            }
         }
 
         // Remover el campo avatar del array de datos ya que no se guarda directamente
@@ -55,6 +69,9 @@ class ProfileController extends Controller
         }
 
         $user->save();
+
+        // Refrescar el usuario en la sesión para asegurar que los datos estén actualizados
+        $user->refresh();
 
         return Redirect::route('profile.edit')->with('success', 'Perfil actualizado exitosamente.');
     }

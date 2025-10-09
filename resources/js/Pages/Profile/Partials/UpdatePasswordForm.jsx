@@ -46,7 +46,7 @@ export default function UpdatePasswordForm({ className = '' }) {
 
     return (
         <section className={className}>
-            <form onSubmit={updatePassword} className="space-y-6">
+            <form onSubmit={updatePassword} className="space-y-8">
                 <div>
                     <InputLabel 
                         htmlFor="current_password" 
@@ -61,7 +61,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                             setData('current_password', e.target.value)
                         }
                         type="password"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-gray-800 focus:ring-gray-800"
                         autoComplete="current-password"
                         placeholder="Ingresa tu contraseña actual"
                     />
@@ -72,7 +72,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                     />
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid lg:grid-cols-2 gap-8">
                     <div>
                         <InputLabel htmlFor="password" value="Nueva Contraseña" />
 
@@ -82,7 +82,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
                             type="password"
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-gray-800 focus:ring-gray-800"
                             autoComplete="new-password"
                             placeholder="Mínimo 8 caracteres"
                         />
@@ -96,7 +96,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                     <div>
                         <InputLabel
                             htmlFor="password_confirmation"
-                            value="Confirmar Nueva Contraseña"
+                            value="Confirmar Contraseña"
                         />
 
                         <TextInput
@@ -106,7 +106,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                                 setData('password_confirmation', e.target.value)
                             }
                             type="password"
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-gray-800 focus:ring-gray-800"
                             autoComplete="new-password"
                             placeholder="Repite la nueva contraseña"
                         />
@@ -115,13 +115,16 @@ export default function UpdatePasswordForm({ className = '' }) {
                             message={errors.password_confirmation}
                             className="mt-2"
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Debe coincidir con la nueva contraseña
+                        </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 pt-4 border-t border-blue-200">
+                <div className="flex items-center gap-4 pt-6 border-t border-gray-200">
                     <PrimaryButton 
                         disabled={processing}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                        className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                     >
                         {processing ? (
                             <>
