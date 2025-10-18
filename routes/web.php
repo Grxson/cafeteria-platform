@@ -12,14 +12,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // Página principal
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', [ClienteController::class, 'welcome'])->name('welcome');
 
 // Rutas de registro de clientes (públicas)
 Route::get('/registro', [ClienteController::class, 'create'])->name('clientes.create');

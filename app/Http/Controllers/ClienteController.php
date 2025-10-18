@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreClienteRequest;
 use App\Models\User;
+use App\Models\Producto;
+use App\Models\CategoriaProducto;
 use App\Helpers\NumberHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +14,110 @@ use Inertia\Inertia;
 
 class ClienteController extends Controller
 {
+    /**
+     * Show the welcome page with featured products.
+     */
+    public function welcome()
+    {
+        // Obtener productos destacados (los más nuevos y con stock)
+        $productosDestacados = Producto::with(['categoriaProducto', 'comentarios'])
+            ->where('estado', 'activo')
+            ->where('stock', '>', 0)
+            ->orderBy('created_at', 'desc')
+            ->limit(6)
+            ->get()
+            ->map(function ($producto) {
+                // Calcular estadísticas reales de comentarios
+                $comentariosActivos = $producto->comentarios()->where('estado', 'activo');
+                $totalComentarios = $comentariosActivos->count();
+                $promedioCalificacion = $totalComentarios > 0 ? $comentariosActivos->avg('calificacion') : 0;
+                
+                return [
+                    'id' => $producto->id,
+                    'nombre' => $producto->nombre,
+                    'descripcion' => $producto->descripcion,
+                    'precio' => $producto->precio,
+                    'imagen_principal' => $producto->imagen_principal,
+                    'categoria' => $producto->categoriaProducto->nombre ?? 'Sin categoría',
+                    'stock' => $producto->stock,
+                    'total_comentarios' => $totalComentarios,
+                    'promedio_calificacion' => round($promedioCalificacion, 1),
+                    'promedio_calificacion_exacto' => $promedioCalificacion, // Para las medias estrellas
+                ];
+            });
+
+        // Obtener categorías para el menú
+        $categorias = CategoriaProducto::where('estado', 'activo')
+            ->orderBy('nombre')
+            ->get();
+
+        // Obtener testimonios reales (últimos comentarios destacados)
+        $testimonios = \App\Models\ComentarioCalificacion::with(['user', 'producto'])
+            ->where('estado', 'activo')
+            ->where('calificacion', '>=', 4) // Solo comentarios con 4+ estrellas
+            ->orderBy('created_at', 'desc')
+            ->limit(6)
+            ->get()
+            ->map(function ($comentario) {
+                return [
+                    'id' => $comentario->id,
+                    'usuario' => $comentario->user->name,
+                    'producto' => $comentario->producto->nombre,
+                    'calificacion' => $comentario->calificacion,
+                    'comentario' => $comentario->comentario,
+                    'fecha' => $comentario->created_at->format('d/m/Y'),
+                    'avatar' => $comentario->user->avatar_url,
+                ];
+            });
+
+        // Estadísticas de la empresa
+        $promedioCalificacion = \App\Models\ComentarioCalificacion::where('estado', 'activo')->avg('calificacion');
+        
+        $estadisticas = [
+            'total_productos' => Producto::where('estado', 'activo')->count(),
+            'total_clientes' => \App\Models\User::where('rol', 'cliente')->where('estado', 'activo')->count(),
+            'total_pedidos' => \App\Models\Pedido::where('estado', 'completado')->count(),
+            'promedio_calificacion' => $promedioCalificacion ? round((float)$promedioCalificacion, 1) : 0.0,
+        ];
+
+        // Productos más vendidos (basado en pedidos completados)
+        $productosPopulares = \App\Models\Producto::with(['categoriaProducto'])
+            ->where('estado', 'activo')
+            ->whereHas('detallesPedido', function($query) {
+                $query->whereHas('pedido', function($q) {
+                    $q->where('estado', 'completado');
+                });
+            })
+            ->withCount(['detallesPedido as ventas_count' => function($query) {
+                $query->whereHas('pedido', function($q) {
+                    $q->where('estado', 'completado');
+                });
+            }])
+            ->orderBy('ventas_count', 'desc')
+            ->limit(4)
+            ->get()
+            ->map(function ($producto) {
+                return [
+                    'id' => $producto->id,
+                    'nombre' => $producto->nombre,
+                    'precio' => $producto->precio,
+                    'imagen_principal' => $producto->imagen_principal,
+                    'categoria' => $producto->categoriaProducto->nombre ?? 'Sin categoría',
+                    'ventas' => $producto->ventas_count,
+                ];
+            });
+
+        return Inertia::render('Welcome', [
+            'productosDestacados' => $productosDestacados,
+            'productosPopulares' => $productosPopulares,
+            'testimonios' => $testimonios,
+            'estadisticas' => $estadisticas,
+            'categorias' => $categorias,
+            'canLogin' => \Route::has('login'),
+            'canRegister' => \Route::has('register'),
+        ]);
+    }
+
     /**
      * Show the form for creating a new client registration.
      */
@@ -136,7 +242,7 @@ class ClienteController extends Controller
         // Distribución de calificaciones
         $distribucionCalificaciones = [];
         for ($i = 1; $i <= 5; $i++) {
-            $count = $comentariosActivos->where('calificacion', $i)->count();
+            $count = $producto->comentarios()->where('estado', 'activo')->where('calificacion', $i)->count();
             $distribucionCalificaciones[$i] = [
                 'count' => $count,
                 'percentage' => $totalComentarios > 0 ? round(($count / $totalComentarios) * 100, 1) : 0

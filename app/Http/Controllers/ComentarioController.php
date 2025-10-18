@@ -128,7 +128,10 @@ class ComentarioController extends Controller
 
         $distribucionCalificaciones = [];
         for ($i = 1; $i <= 5; $i++) {
-            $count = $comentarios->where('calificacion', $i)->count();
+            $count = ComentarioCalificacion::where('producto_id', $productoId)
+                                          ->where('estado', 'activo')
+                                          ->where('calificacion', $i)
+                                          ->count();
             $distribucionCalificaciones[$i] = [
                 'count' => $count,
                 'percentage' => $totalComentarios > 0 ? round(($count / $totalComentarios) * 100, 1) : 0

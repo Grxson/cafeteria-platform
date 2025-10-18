@@ -47,7 +47,33 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
         if (producto.video_file) {
             return `/storage/${producto.video_file}`;
         }
-        return producto.video_url || null;
+        
+        if (producto.video_url) {
+            // Si es una URL de YouTube, asegurar que tenga los parámetros correctos
+            if (producto.video_url.includes('youtube.com') || producto.video_url.includes('youtu.be')) {
+                // Convertir URL de YouTube a formato embed si es necesario
+                let embedUrl = producto.video_url;
+                
+                // Si es una URL normal de YouTube, convertir a embed
+                if (producto.video_url.includes('/watch?v=')) {
+                    const videoId = producto.video_url.split('v=')[1]?.split('&')[0];
+                    if (videoId) {
+                        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+                    }
+                } else if (producto.video_url.includes('youtu.be/')) {
+                    const videoId = producto.video_url.split('youtu.be/')[1]?.split('?')[0];
+                    if (videoId) {
+                        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+                    }
+                }
+                
+                return embedUrl;
+            }
+            
+            return producto.video_url;
+        }
+        
+        return null;
     };
 
     const isVideoFile = () => {
@@ -542,6 +568,9 @@ export default function ProductoDetalle({ cliente, producto, productosRelacionad
                                             className="w-full h-full"
                                             allowFullScreen
                                             title={`Video de ${producto.nombre}`}
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            sandbox="allow-scripts allow-same-origin allow-presentation"
                                         />
                                     )}
                                 </div>
