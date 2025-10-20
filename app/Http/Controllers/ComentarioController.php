@@ -57,19 +57,8 @@ class ComentarioController extends Controller
             ], 403);
         }
 
-        // Verificar que no exista ya un comentario para este producto/pedido/usuario
-        $existeComentario = ComentarioCalificacion::where([
-            'user_id' => $user->id,
-            'producto_id' => $request->producto_id,
-            'pedido_id' => $request->pedido_id,
-        ])->exists();
-
-        if ($existeComentario) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ya has comentado este producto para este pedido.'
-            ], 409);
-        }
+        // Permitir múltiples comentarios por producto/pedido/usuario
+        // (Se eliminó la restricción de un comentario único)
 
         try {
             $comentario = ComentarioCalificacion::create([
@@ -163,20 +152,12 @@ class ComentarioController extends Controller
 
         $pedidosDisponibles = [];
         foreach ($pedidosConProducto as $pedido) {
-            // Verificar si ya comentó este producto en este pedido
-            $yaComento = ComentarioCalificacion::where([
-                'user_id' => $user->id,
-                'producto_id' => $productoId,
-                'pedido_id' => $pedido->id,
-            ])->exists();
-
-            if (!$yaComento) {
-                $pedidosDisponibles[] = [
-                    'id' => $pedido->id,
-                    'fecha' => $pedido->created_at->format('d/m/Y'),
-                    'total' => $pedido->total
-                ];
-            }
+            // Permitir comentarios múltiples, mostrar todos los pedidos disponibles
+            $pedidosDisponibles[] = [
+                'id' => $pedido->id,
+                'fecha' => $pedido->created_at->format('d/m/Y'),
+                'total' => $pedido->total
+            ];
         }
 
         return response()->json([
@@ -206,19 +187,8 @@ class ComentarioController extends Controller
 
         $user = Auth::user();
         
-        // Verificar que no exista ya un comentario libre para este producto/usuario
-        $existeComentario = ComentarioCalificacion::where([
-            'user_id' => $user->id,
-            'producto_id' => $request->producto_id,
-            'pedido_id' => null, // Comentarios libres no tienen pedido_id
-        ])->exists();
-
-        if ($existeComentario) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ya has comentado este producto anteriormente.'
-            ], 409);
-        }
+        // Permitir múltiples comentarios libres por producto/usuario
+        // (Se eliminó la restricción de un comentario único)
 
         try {
             $comentario = ComentarioCalificacion::create([

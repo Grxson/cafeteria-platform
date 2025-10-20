@@ -101,9 +101,59 @@ export default function Welcome({ auth, productosDestacados, productosPopulares,
         }
     };
 
+    // Función para scroll suave a una sección
+    const scrollToSection = (sectionId) => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+            // Añadir efecto de resaltado temporal
+            element.classList.add('section-highlight');
+            
+            // Scroll suave
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+                inline: 'nearest'
+            });
+            
+            // Remover el efecto de resaltado después de la animación
+            setTimeout(() => {
+                element.classList.remove('section-highlight');
+            }, 2000);
+        }
+    };
+
+    // Función para manejar clics en enlaces del navbar
+    const handleNavClick = (e, sectionId) => {
+        e.preventDefault();
+        scrollToSection(sectionId);
+    };
+
     return (
         <>
             <Head title="CafeTech - Tu Experiencia Cafetera Premium" />
+            <style jsx global>{`
+                html {
+                    scroll-behavior: smooth;
+                }
+                
+                /* Animación adicional para el scroll */
+                @media (prefers-reduced-motion: no-preference) {
+                    html {
+                        scroll-behavior: smooth;
+                    }
+                }
+                
+                /* Efecto de resaltado temporal para las secciones */
+                .section-highlight {
+                    animation: highlight 2s ease-in-out;
+                }
+                
+                @keyframes highlight {
+                    0% { background-color: transparent; }
+                    50% { background-color: rgba(251, 191, 36, 0.1); }
+                    100% { background-color: transparent; }
+                }
+            `}</style>
             <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
                 {/* Header */}
                 <header className="bg-white/95 backdrop-blur-md shadow-lg border-b border-amber-200 sticky top-0 z-50">
@@ -127,10 +177,36 @@ export default function Welcome({ auth, productosDestacados, productosPopulares,
                             {/* Navigation */}
                             <nav className="hidden md:flex items-center space-x-8">
                                 <div className="flex items-center space-x-6">
-                                    <a href="#productos" className="text-gray-700 hover:text-amber-600 font-medium transition-colors duration-300">Productos</a>
-                                    <a href="#testimonios" className="text-gray-700 hover:text-amber-600 font-medium transition-colors duration-300">Testimonios</a>
-                                    <a href="#estadisticas" className="text-gray-700 hover:text-amber-600 font-medium transition-colors duration-300">Nosotros</a>
-                                    <a href="#contacto" className="text-gray-700 hover:text-amber-600 font-medium transition-colors duration-300">Contacto</a>
+                                    <button 
+                                        onClick={(e) => handleNavClick(e, 'productos')} 
+                                        className="text-gray-700 hover:text-amber-600 font-medium transition-all duration-300 cursor-pointer hover:scale-105 transform"
+                                    >
+                                        Productos
+                                    </button>
+                                    <button 
+                                        onClick={(e) => handleNavClick(e, 'testimonios')} 
+                                        className="text-gray-700 hover:text-amber-600 font-medium transition-all duration-300 cursor-pointer hover:scale-105 transform"
+                                    >
+                                        Testimonios
+                                    </button>
+                                    <button 
+                                        onClick={(e) => handleNavClick(e, 'estadisticas')} 
+                                        className="text-gray-700 hover:text-amber-600 font-medium transition-all duration-300 cursor-pointer hover:scale-105 transform"
+                                    >
+                                        Nosotros
+                                    </button>
+                                    <button 
+                                        onClick={(e) => handleNavClick(e, 'contacto')} 
+                                        className="text-gray-700 hover:text-amber-600 font-medium transition-all duration-300 cursor-pointer hover:scale-105 transform"
+                                    >
+                                        Contacto
+                                    </button>
+                                    <Link
+                                        href={route('tienda.publica')}
+                                        className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                    >
+                                        Ver Tienda
+                                    </Link>
                                 </div>
                                 
                                 {auth.user ? (
@@ -255,16 +331,17 @@ export default function Welcome({ auth, productosDestacados, productosPopulares,
                                                                 {!auth.user && (
                                                                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                                                                         <Link
-                                                                            href={route('register')}
-                                                                            className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                                                            href={route('tienda.publica')}
+                                                                            className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
                                                                         >
-                                                                            Únete para Comprar
+                                                                            <ShoppingCartIcon className="w-5 h-5 mr-2" />
+                                                                            Explorar Tienda
                                                                         </Link>
                                                                         <Link
-                                                                            href={route('login')}
+                                                                            href={route('register')}
                                                                             className="border-2 border-amber-600 text-amber-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-amber-600 hover:text-white transition-all duration-300"
                                                                         >
-                                                                            Ya tengo cuenta
+                                                                            Registrarse
                                                                         </Link>
                                                                     </div>
                                                                 )}
@@ -433,12 +510,19 @@ export default function Welcome({ auth, productosDestacados, productosPopulares,
                                                 <div className="text-2xl font-bold text-amber-600 mb-4">
                                                     ${parseFloat(producto.precio).toFixed(2)}
                                                 </div>
-                                                {auth.user && (
+                                                {auth.user ? (
                                                     <Link
                                                         href={route('clientes.producto.show', producto.id)}
                                                         className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-2 px-4 rounded-full text-sm font-semibold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 inline-block"
                                                     >
                                                         Ver Producto
+                                                    </Link>
+                                                ) : (
+                                                    <Link
+                                                        href={route('tienda.publica')}
+                                                        className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-2 px-4 rounded-full text-sm font-semibold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 inline-block"
+                                                    >
+                                                        Ver Tienda
                                                     </Link>
                                                 )}
                                             </div>
@@ -611,8 +695,15 @@ export default function Welcome({ auth, productosDestacados, productosPopulares,
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <Link
+                                        href={route('tienda.publica')}
+                                        className="bg-white text-amber-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-amber-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                                    >
+                                        <ShoppingCartIcon className="w-5 h-5 mr-2" />
+                                        Explorar Tienda
+                                    </Link>
+                                    <Link
                                         href={route('register')}
-                                        className="bg-white text-amber-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-amber-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                        className="bg-amber-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-amber-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                                     >
                                         Crear Cuenta Gratis
                                     </Link>
@@ -642,18 +733,18 @@ export default function Welcome({ auth, productosDestacados, productosPopulares,
                             <div>
                                 <h4 className="text-lg font-semibold mb-4 text-amber-400">Productos</h4>
                                 <ul className="space-y-2 text-gray-300">
-                                    <li><a href="#productos" className="hover:text-amber-400 transition-colors">Cafés Especiales</a></li>
-                                    <li><a href="#productos" className="hover:text-amber-400 transition-colors">Granos Premium</a></li>
-                                    <li><a href="#productos" className="hover:text-amber-400 transition-colors">Accesorios</a></li>
-                                    <li><a href="#productos" className="hover:text-amber-400 transition-colors">Regalos</a></li>
+                                    <li><button onClick={(e) => handleNavClick(e, 'productos')} className="hover:text-amber-400 transition-colors cursor-pointer">Cafés Especiales</button></li>
+                                    <li><button onClick={(e) => handleNavClick(e, 'productos')} className="hover:text-amber-400 transition-colors cursor-pointer">Granos Premium</button></li>
+                                    <li><button onClick={(e) => handleNavClick(e, 'productos')} className="hover:text-amber-400 transition-colors cursor-pointer">Accesorios</button></li>
+                                    <li><button onClick={(e) => handleNavClick(e, 'productos')} className="hover:text-amber-400 transition-colors cursor-pointer">Regalos</button></li>
                                 </ul>
                             </div>
                             <div>
                                 <h4 className="text-lg font-semibold mb-4 text-amber-400">Servicios</h4>
                                 <ul className="space-y-2 text-gray-300">
-                                    <li><a href="#estadisticas" className="hover:text-amber-400 transition-colors">Sobre Nosotros</a></li>
-                                    <li><a href="#contacto" className="hover:text-amber-400 transition-colors">Contacto</a></li>
-                                    <li><a href="#testimonios" className="hover:text-amber-400 transition-colors">Testimonios</a></li>
+                                    <li><button onClick={(e) => handleNavClick(e, 'estadisticas')} className="hover:text-amber-400 transition-colors cursor-pointer">Sobre Nosotros</button></li>
+                                    <li><button onClick={(e) => handleNavClick(e, 'contacto')} className="hover:text-amber-400 transition-colors cursor-pointer">Contacto</button></li>
+                                    <li><button onClick={(e) => handleNavClick(e, 'testimonios')} className="hover:text-amber-400 transition-colors cursor-pointer">Testimonios</button></li>
                                     <li><a href="#" className="hover:text-amber-400 transition-colors">Soporte</a></li>
                                 </ul>
                             </div>

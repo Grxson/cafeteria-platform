@@ -161,6 +161,28 @@ class ClienteController extends Controller
     }
 
     /**
+     * Show the public store (accessible without authentication).
+     */
+    public function tiendaPublica()
+    {
+        // Obtener productos disponibles con sus categorías
+        $productos = \App\Models\Producto::with('categoriaProducto')
+            ->where('estado', 'activo')
+            ->orderBy('categoria_producto_id')
+            ->orderBy('nombre')
+            ->get();
+            
+        $categorias = \App\Models\CategoriaProducto::orderBy('nombre')->get();
+        
+        return Inertia::render('Clientes/Tienda', [
+            'cliente' => null, // No hay cliente autenticado
+            'productos' => $productos,
+            'categorias' => $categorias,
+            'esPublica' => true // Flag para indicar que es la vista pública
+        ]);
+    }
+
+    /**
      * Show the client dashboard.
      */
     public function dashboard()

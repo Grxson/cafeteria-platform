@@ -14,6 +14,9 @@ use Inertia\Inertia;
 // Página principal
 Route::get('/', [ClienteController::class, 'welcome'])->name('welcome');
 
+// Tienda pública (accesible sin autenticación)
+Route::get('/tienda-publica', [ClienteController::class, 'tiendaPublica'])->name('tienda.publica');
+
 // Rutas de registro de clientes (públicas)
 Route::get('/registro', [ClienteController::class, 'create'])->name('clientes.create');
 Route::post('/registro', [ClienteController::class, 'store'])->name('clientes.store');
