@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ProductoController;
+use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\PedidoController;
+use App\Http\Controllers\Admin\ComentarioController as AdminComentarioController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComentarioController;
 use App\Http\Controllers\CarritoController;
@@ -75,6 +78,27 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('productos/{producto}/delete', [ProductoController::class, 'delete'])->name('productos.delete');
     Route::post('productos/cargar-dt', [ProductoController::class, 'cargarDT'])->name('productos.cargar-dt');
     Route::resource('productos', ProductoController::class);
+    
+    // Gestión de usuarios
+    Route::patch('usuarios/{usuario}/toggle-status', [UsuarioController::class, 'toggleStatus'])->name('usuarios.toggle-status');
+    Route::post('usuarios/cargar-dt', [UsuarioController::class, 'cargarDT'])->name('usuarios.cargar-dt');
+    Route::get('usuarios/estadisticas', [UsuarioController::class, 'estadisticas'])->name('usuarios.estadisticas');
+    Route::resource('usuarios', UsuarioController::class)->only(['index', 'show', 'edit', 'update']);
+    
+    // Gestión de pedidos
+    Route::patch('pedidos/{pedido}/update-status', [PedidoController::class, 'updateStatus'])->name('pedidos.update-status');
+    Route::post('pedidos/cargar-dt', [PedidoController::class, 'cargarDT'])->name('pedidos.cargar-dt');
+    Route::get('pedidos/estadisticas', [PedidoController::class, 'estadisticas'])->name('pedidos.estadisticas');
+    Route::get('pedidos/estado/{estado}', [PedidoController::class, 'porEstado'])->name('pedidos.por-estado');
+    Route::resource('pedidos', PedidoController::class)->only(['index', 'show', 'edit', 'update', 'destroy']);
+    
+    // Gestión de comentarios
+    Route::patch('comentarios/{comentario}/update-status', [AdminComentarioController::class, 'updateStatus'])->name('comentarios.update-status');
+    Route::post('comentarios/cargar-dt', [AdminComentarioController::class, 'cargarDT'])->name('comentarios.cargar-dt');
+    Route::get('comentarios/estadisticas', [AdminComentarioController::class, 'estadisticas'])->name('comentarios.estadisticas');
+    Route::get('comentarios/estado/{estado}', [AdminComentarioController::class, 'porEstado'])->name('comentarios.por-estado');
+    Route::post('comentarios/bulk-update-status', [AdminComentarioController::class, 'bulkUpdateStatus'])->name('comentarios.bulk-update-status');
+    Route::resource('comentarios', AdminComentarioController::class)->only(['index', 'show', 'edit', 'update', 'destroy']);
     
     // Reportes y DataTable
     Route::get('reportes', [App\Http\Controllers\Admin\ReportesController::class, 'index'])->name('reportes.index');
