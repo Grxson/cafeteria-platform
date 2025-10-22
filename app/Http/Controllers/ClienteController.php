@@ -175,7 +175,14 @@ class ClienteController extends Controller
         $categorias = \App\Models\CategoriaProducto::orderBy('nombre')->get();
         
         return Inertia::render('Clientes/Tienda', [
-            'cliente' => null, // No hay cliente autenticado
+            'auth' => [
+                'user' => Auth::user() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'rol' => Auth::user()->rol,
+                ] : null,
+            ],
             'productos' => $productos,
             'categorias' => $categorias,
             'esPublica' => true // Flag para indicar que es la vista pública

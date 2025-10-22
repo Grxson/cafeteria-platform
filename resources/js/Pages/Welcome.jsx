@@ -131,29 +131,6 @@ export default function Welcome({ auth, productosDestacados, productosPopulares,
     return (
         <>
             <Head title="CafeTech - Tu Experiencia Cafetera Premium" />
-            <style jsx global>{`
-                html {
-                    scroll-behavior: smooth;
-                }
-                
-                /* Animación adicional para el scroll */
-                @media (prefers-reduced-motion: no-preference) {
-                    html {
-                        scroll-behavior: smooth;
-                    }
-                }
-                
-                /* Efecto de resaltado temporal para las secciones */
-                .section-highlight {
-                    animation: highlight 2s ease-in-out;
-                }
-                
-                @keyframes highlight {
-                    0% { background-color: transparent; }
-                    50% { background-color: rgba(251, 191, 36, 0.1); }
-                    100% { background-color: transparent; }
-                }
-            `}</style>
             <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
                 {/* Header */}
                 <header className="bg-white/95 backdrop-blur-md shadow-lg border-b border-amber-200 sticky top-0 z-50">

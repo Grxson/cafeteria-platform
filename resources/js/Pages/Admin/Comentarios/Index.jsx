@@ -272,7 +272,7 @@ export default function ComentariosIndex() {
             <Head title="Gestión de Comentarios - Admin" />
 
             <div className="py-6">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
                     {/* Notificación */}
                     {notificacion && (
                         <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500 ${
