@@ -1,52 +1,232 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Plataforma de Cafetería
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de e-commerce para cafetería desarrollado con Laravel, React e Inertia.js
 
-## About Laravel
+## 📋 Sitemap de la Plataforma
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 🌐 Rutas Públicas (Sin Autenticación)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+#### Página Principal
+- **Home** `/` - Página de bienvenida
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+#### Tienda
+- **Tienda Pública** `/tienda-publica` - Catálogo de productos visible sin autenticación
 
-## Learning Laravel
+#### Autenticación
+- **Iniciar Sesión** `/login` - Formulario de inicio de sesión
+- **Registro** `/register` - Registro general de usuarios
+- **Registro de Cliente** `/registro` - Registro específico para clientes
+- **Olvidé mi Contraseña** `/forgot-password` - Solicitud de recuperación de contraseña
+- **Restablecer Contraseña** `/reset-password/{token}` - Formulario para nueva contraseña
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+#### Verificación de Email
+- **Verificar Email** `/verify-email` - Aviso de verificación
+- **Confirmar Email** `/verify-email/{id}/{hash}` - Link de confirmación
+- **Reenviar Verificación** `/email/verification-notification` - Reenvío de email de verificación
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 👤 ROL: CLIENTE
 
-## Laravel Sponsors
+> **Middleware requerido**: `auth`, `verified`, `client`
+> **Prefijo de rutas**: `/cliente`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+#### Dashboard
+- **Dashboard Principal** `/cliente/dashboard` - Panel principal del cliente
 
-### Premium Partners
+#### Tienda y Productos
+- **Catálogo de Productos** `/cliente/tienda` - Listado de productos disponibles
+- **Detalle de Producto** `/cliente/producto/{id}` - Información detallada del producto
+- **Preview Checkout Producto** `/cliente/producto/{id}/checkout-preview` - Vista previa antes de compra directa
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+#### Carrito de Compras
+- **Ver Carrito** `/cliente/carrito` - Visualización del carrito
+- **Preview Checkout** `/cliente/carrito/checkout-preview` - Vista previa antes del pago
+- **Agregar al Carrito** `POST /cliente/carrito/agregar` - Añadir producto
+- **Actualizar Cantidad** `PUT /cliente/carrito/actualizar/{id}` - Modificar cantidad
+- **Quitar Producto** `DELETE /cliente/carrito/quitar/{id}` - Eliminar producto del carrito
+- **Vaciar Carrito** `DELETE /cliente/carrito/vaciar` - Limpiar todo el carrito
+- **Contador de Items** `GET /cliente/carrito/count` - Cantidad de productos en carrito
 
-## Contributing
+#### Compra
+- **Comprar Directamente** `POST /cliente/comprar-directo` - Compra rápida sin carrito
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+#### Procesamiento de Pagos (Stripe)
+- **Crear Sesión de Pago** `POST /cliente/stripe/checkout-session` - Iniciar pago desde carrito
+- **Pago Directo** `POST /cliente/stripe/checkout-session-direct` - Iniciar pago directo
+- **Pago Exitoso** `/stripe/success` - Página de confirmación tras pago
+
+#### Pedidos
+- **Mis Pedidos** `/cliente/pedidos` - Historial de pedidos del cliente
+
+#### Facturas
+- **Descargar Factura** `/cliente/factura/{id}/descargar` - Descarga PDF de factura
+- **Ver Factura** `/cliente/factura/{id}/ver` - Visualizar factura en navegador
+
+#### Comentarios y Calificaciones
+- **Crear Comentario** `POST /cliente/comentarios` - Dejar comentario en producto comprado
+- **Comentario Libre** `POST /cliente/comentarios/libre` - Comentario sin restricción de compra
+- **Actualizar Comentario** `PUT /cliente/comentarios/{id}` - Editar comentario propio
+- **Eliminar Comentario** `DELETE /cliente/comentarios/{id}` - Borrar comentario propio
+- **Ver Comentarios** `GET /cliente/producto/{id}/comentarios` - Listar comentarios de producto
+- **Estadísticas de Comentarios** `GET /cliente/producto/{id}/estadisticas` - Métricas de calificaciones
+- **Verificar Permiso** `GET /cliente/producto/{id}/puede-comentar` - Verificar si puede comentar
+
+#### Perfil
+- **Editar Perfil** `/profile` - Modificar datos personales
+- **Actualizar Perfil** `PATCH /profile` - Guardar cambios de perfil
+- **Eliminar Cuenta** `DELETE /profile` - Borrar cuenta de usuario
+- **Confirmar Contraseña** `/confirm-password` - Confirmar contraseña para acciones sensibles
+- **Cambiar Contraseña** `PUT /password` - Actualizar contraseña
+
+---
+
+### 🔐 ROL: ADMINISTRADOR
+
+> **Middleware requerido**: `auth`, `verified`, `admin`
+> **Prefijo de rutas**: `/admin`
+
+#### Dashboard
+- **Dashboard Admin** `/admin/dashboard` - Panel de control administrativo
+
+#### Gestión de Productos
+- **Listar Productos** `/admin/productos` - Tabla de todos los productos
+- **Crear Producto** `/admin/productos/create` - Formulario de nuevo producto
+- **Ver Producto** `/admin/productos/{id}` - Detalle completo del producto
+- **Editar Producto** `/admin/productos/{id}/edit` - Formulario de edición
+- **Actualizar Producto** `PUT /admin/productos/{id}` - Guardar cambios
+- **Eliminar Producto** `DELETE /admin/productos/{id}/delete` - Borrar producto (eliminación lógica)
+- **Cambiar Estado** `PATCH /admin/productos/{id}/toggle-status` - Activar/desactivar producto
+- **Desactivar Producto** `PATCH /admin/productos/{id}/deactivate` - Desactivar específicamente
+- **DataTable Productos** `POST /admin/productos/cargar-dt` - Carga de datos para tabla
+
+#### Gestión de Usuarios
+- **Listar Usuarios** `/admin/usuarios` - Tabla de todos los usuarios
+- **Ver Usuario** `/admin/usuarios/{id}` - Detalle del usuario
+- **Editar Usuario** `/admin/usuarios/{id}/edit` - Formulario de edición de usuario
+- **Actualizar Usuario** `PUT /admin/usuarios/{id}` - Guardar cambios de usuario
+- **Cambiar Estado** `PATCH /admin/usuarios/{id}/toggle-status` - Activar/desactivar usuario
+- **DataTable Usuarios** `POST /admin/usuarios/cargar-dt` - Carga de datos para tabla
+- **Estadísticas de Usuarios** `GET /admin/usuarios/estadisticas` - Métricas generales
+
+#### Gestión de Pedidos
+- **Listar Pedidos** `/admin/pedidos` - Tabla de todos los pedidos
+- **Ver Pedido** `/admin/pedidos/{id}` - Detalle completo del pedido
+- **Editar Pedido** `/admin/pedidos/{id}/edit` - Formulario de edición
+- **Actualizar Pedido** `PUT /admin/pedidos/{id}` - Guardar cambios
+- **Eliminar Pedido** `DELETE /admin/pedidos/{id}` - Borrar pedido
+- **Actualizar Estado** `PATCH /admin/pedidos/{id}/update-status` - Cambiar estado del pedido
+- **Filtrar por Estado** `GET /admin/pedidos/estado/{estado}` - Pedidos según estado
+- **DataTable Pedidos** `POST /admin/pedidos/cargar-dt` - Carga de datos para tabla
+- **Estadísticas de Pedidos** `GET /admin/pedidos/estadisticas` - Métricas de ventas
+
+#### Gestión de Comentarios
+- **Listar Comentarios** `/admin/comentarios` - Tabla de todos los comentarios
+- **Ver Comentario** `/admin/comentarios/{id}` - Detalle del comentario
+- **Editar Comentario** `/admin/comentarios/{id}/edit` - Formulario de edición
+- **Actualizar Comentario** `PUT /admin/comentarios/{id}` - Guardar cambios
+- **Eliminar Comentario** `DELETE /admin/comentarios/{id}` - Borrar comentario
+- **Actualizar Estado** `PATCH /admin/comentarios/{id}/update-status` - Aprobar/rechazar comentario
+- **Actualización Masiva** `POST /admin/comentarios/bulk-update-status` - Cambiar estado múltiple
+- **Filtrar por Estado** `GET /admin/comentarios/estado/{estado}` - Comentarios según estado
+- **DataTable Comentarios** `POST /admin/comentarios/cargar-dt` - Carga de datos para tabla
+- **Estadísticas de Comentarios** `GET /admin/comentarios/estadisticas` - Métricas de calificaciones
+
+#### Reportes
+- **Dashboard de Reportes** `/admin/reportes` - Panel de reportes y analíticas
+- **DataTable Reportes** `POST /admin/reportes/cargar-dt` - Carga de datos para reportes
+- **Estadísticas Generales** `GET /admin/reportes/estadisticas` - Métricas generales del sistema
+
+---
+
+## 🎨 Estructura de Vistas (React/Inertia.js)
+
+### Páginas Públicas
+- `Pages/Welcome.jsx` - Página principal
+- `Pages/Auth/Login.jsx` - Inicio de sesión
+- `Pages/Auth/Register.jsx` - Registro
+- `Pages/Auth/ForgotPassword.jsx` - Recuperar contraseña
+- `Pages/Auth/ResetPassword.jsx` - Nueva contraseña
+- `Pages/Auth/VerifyEmail.jsx` - Verificación de email
+- `Pages/Auth/ConfirmPassword.jsx` - Confirmar contraseña
+
+### Cliente
+- `Pages/Clientes/Dashboard.jsx` - Dashboard del cliente
+- `Pages/Clientes/Tienda.jsx` - Catálogo de productos
+- `Pages/Clientes/ProductoDetalle.jsx` - Detalle del producto
+- `Pages/Clientes/Carrito.jsx` - Carrito de compras
+- `Pages/Clientes/CheckoutPreview.jsx` - Vista previa de compra
+- `Pages/Clientes/Pedidos.jsx` - Historial de pedidos
+
+### Administrador
+- `Pages/Admin/Dashboard.jsx` - Dashboard administrativo
+- **Productos:**
+  - `Pages/Admin/Productos/Index.jsx` - Listado
+  - `Pages/Admin/Productos/Create.jsx` - Crear
+  - `Pages/Admin/Productos/Show.jsx` - Ver
+  - `Pages/Admin/Productos/Edit.jsx` - Editar
+- **Usuarios:**
+  - `Pages/Admin/Usuarios/Index.jsx` - Listado
+  - `Pages/Admin/Usuarios/Show.jsx` - Ver
+  - `Pages/Admin/Usuarios/Edit.jsx` - Editar
+- **Pedidos:**
+  - `Pages/Admin/Pedidos/Index.jsx` - Listado
+  - `Pages/Admin/Pedidos/Show.jsx` - Ver
+  - `Pages/Admin/Pedidos/Edit.jsx` - Editar
+- **Comentarios:**
+  - `Pages/Admin/Comentarios/Index.jsx` - Listado
+  - `Pages/Admin/Comentarios/Show.jsx` - Ver
+  - `Pages/Admin/Comentarios/Edit.jsx` - Editar
+- **Reportes:**
+  - `Pages/Admin/Reportes/Index.jsx` - Dashboard de reportes
+
+### Perfil (Compartido)
+- `Pages/Profile/Edit.jsx` - Edición de perfil
+
+---
+
+## 🔑 Roles y Permisos
+
+### Cliente (`client`)
+- ✅ Navegar catálogo de productos
+- ✅ Agregar productos al carrito
+- ✅ Realizar compras con Stripe
+- ✅ Ver y descargar facturas
+- ✅ Historial de pedidos
+- ✅ Crear y gestionar comentarios/calificaciones
+- ✅ Editar perfil personal
+
+### Administrador (`admin`)
+- ✅ Gestión completa de productos (CRUD)
+- ✅ Gestión de usuarios
+- ✅ Gestión de pedidos y estados
+- ✅ Moderación de comentarios
+- ✅ Acceso a reportes y estadísticas
+- ✅ Vista general del sistema
+
+---
+
+## 📊 Características Principales
+
+- **Sistema de Roles**: Cliente y Administrador
+- **E-commerce Completo**: Carrito, checkout, pagos con Stripe
+- **Gestión de Productos**: CRUD completo con imágenes
+- **Sistema de Comentarios**: Calificaciones y reseñas
+- **Facturación**: Generación de facturas PDF
+- **Reportes**: Dashboard con métricas y estadísticas
+- **Autenticación**: Sistema completo con verificación de email
+- **Responsive**: Interfaz adaptable con React y Tailwind CSS
+
+---
+
+## 🛠️ Stack Tecnológico
+
+- **Backend**: Laravel 11
+- **Frontend**: React + Inertia.js
+- **Estilos**: Tailwind CSS
+- **Base de Datos**: MySQL
+- **Pagos**: Stripe
+- **PDFs**: DomPDF
 
 ## Code of Conduct
 
