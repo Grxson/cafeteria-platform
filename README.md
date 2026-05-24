@@ -139,6 +139,53 @@ Sistema de e-commerce para cafetería desarrollado con Laravel, React e Inertia.
 
 ---
 
+## 🗺️ Mapa de Sitio (Esquema)
+
+Diagrama resumido de navegación (solo páginas funcionales, mínimo 10). Se excluyen acciones como cierre de sesión y rutas técnicas.
+
+```mermaid
+flowchart LR
+  subgraph Publico[Publico]
+    A[Home /]
+    B[Tienda Publica /tienda-publica]
+    C[Login /login]
+    D[Registro /register]
+    E[Recuperar Password /forgot-password]
+  end
+
+  subgraph Cliente[Cliente (/cliente)]
+    F[Dashboard /dashboard]
+    G[Tienda /tienda]
+    H[Detalle Producto /producto/{id}]
+    I[Carrito /carrito]
+    J[Pedidos /pedidos]
+    K[Factura Ver /factura/{id}/ver]
+  end
+
+  subgraph Admin[Admin (/admin)]
+    L[Dashboard /dashboard]
+    M[Productos Index /productos]
+    N[Producto Crear /productos/create]
+    O[Usuarios Index /usuarios]
+    P[Pedidos Index /pedidos]
+    Q[Reportes /reportes]
+  end
+
+  A --> B
+  B --> C
+  C --> F
+  D --> F
+  F --> G --> H
+  G --> I --> J
+  J --> K
+  L --> M --> N
+  L --> O
+  L --> P
+  L --> Q
+```
+
+---
+
 ## 🎨 Estructura de Vistas (React/Inertia.js)
 
 ### Páginas Públicas
